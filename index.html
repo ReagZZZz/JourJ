@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jour J Pêche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: un copain de ponton qui connaît la marée : direct, tutoiement, jargon de pêcheur, pas de chiffres inutiles.
+   IDEA: l'annuaire des marées et le carnet de pêche, version passerelle de nuit.
+   PICTURE: la courbe de marée 24 h où s'allument les coups à jouer, avec la fiche marée façon annuaire à côté du verdict en poissons.
+   COLOUR and TYPE: bleu nuit marine, cyan pour l'eau, vert pour les bons coups, or pour la grosse journée ; Barlow Condensed comme les annuaires, Barlow pour le texte.
+   LAYOUT: réglages à gauche (cale, bateau, cible, météo), verdict + fiche marée + courbe en haut, puis le détail ; tout s'empile sous 900 px. */
+:root{color-scheme:dark;--bg:#06121d;--bg2:#0b1d2c;--card:#0a1b2a;--line:rgba(150,210,245,.15);--ink:#e7f2f8;--mut:#90abbe;--cy:#3fd0ff;--em:#2ee6a6;--or:#ff9f43;--rd:#ff5d6c;--au:#ffd166}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:linear-gradient(180deg,#0d2336,var(--bg) 480px);background-color:var(--bg);color:var(--ink);font:16px/1.55 Barlow,system-ui,sans-serif;overflow-x:clip;min-height:100vh}
+h1,h2,h3,.num{font-family:"Barlow Condensed",Barlow,sans-serif;font-weight:700}
+h1{font-size:clamp(30px,4vw,44px);line-height:1.05;margin:0}
+h2{font-size:24px;line-height:1.1;margin:0 0 14px}
+h3{font-size:18px;margin:0 0 6px}
+p{margin:0 0 10px}
+.mut{color:var(--mut)}.small{font-size:13.5px}
+.top{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:flex-end;justify-content:space-between;padding:22px max(4vw,16px) 6px;max-width:1360px;margin:auto}
+.top .sub{color:var(--mut);font-size:16px}
+.layout{display:grid;grid-template-columns:350px minmax(0,1fr);gap:18px;padding:14px max(4vw,16px) 48px;max-width:1360px;margin:auto;align-items:start}
+.controls{grid-row:1/span 9;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.grp{font:700 15px "Barlow Condensed";color:var(--cy);margin:18px 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.grp:first-of-type{margin-top:0}
+.field{margin-bottom:14px}
+.field>label,.lab{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:var(--mut);margin-bottom:6px}
+.lab b{color:var(--ink);font-weight:600;white-space:nowrap}
+select,input[type=date],input[type=text],textarea{width:100%;min-height:44px;font:16px Barlow,sans-serif;color:var(--ink);background:#0d2234;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+textarea{min-height:90px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--cy);height:32px}
+input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:40px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);font:500 14.5px Barlow,sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--cy);color:#04202e;border-color:var(--cy)}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg.d8{grid-template-columns:repeat(4,1fr)}.seg.d3{grid-template-columns:repeat(3,1fr)}
+.seg button{min-height:40px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 14.5px "Barlow Condensed",sans-serif;cursor:pointer;padding:2px}
+.seg button[aria-pressed=true]{background:rgba(63,208,255,.18);border-color:var(--cy);color:var(--cy)}
+.btn{min-height:40px;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);font:500 14.5px Barlow,sans-serif;cursor:pointer}
+.btn.pri{background:var(--cy);color:#04202e;border-color:var(--cy);font-weight:600}
+.badge{font:600 12.5px Barlow;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.badge.auto{color:var(--em);border-color:rgba(46,230,166,.4)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--cy);font-size:14.5px;min-height:32px;display:flex;align-items:center}
+.inl{display:flex;gap:6px;margin-top:8px}.inl input{flex:1}
+.hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:22px;align-items:stretch}
+.verdict{font-size:clamp(34px,4.4vw,54px);line-height:1;margin:0 0 12px;text-wrap:balance}
+.fishes{display:flex;gap:8px;margin-bottom:14px}
+.fish{position:relative;width:46px;height:29px;flex:none}
+.fish svg{position:absolute;inset:0;width:46px;height:29px}
+.fish .fill{position:absolute;inset:0;overflow:hidden}
+.fishes.sm{gap:3px;justify-content:center;margin:4px 0}.fishes.sm .fish,.fishes.sm .fish svg{width:17px;height:11px}
+.alert{border:1px solid var(--rd);background:rgba(255,93,108,.1);color:#ffc9ce;border-radius:12px;padding:10px 14px;margin-top:10px;font-size:15px}
+.note{border:1px solid rgba(63,208,255,.35);background:rgba(63,208,255,.07);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:15px}
+.tide{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:#081725;display:grid;gap:10px;align-content:start}
+.tide .hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.coefbox{border:2px solid var(--cy);border-radius:10px;padding:2px 12px 4px;text-align:center;line-height:1}
+.coefbox b{display:block;font:700 40px "Barlow Condensed"}
+.coefbox span{font-size:12.5px;color:var(--mut)}
+.tt{width:100%;border-collapse:collapse;font-size:16px}
+.tt td{padding:5px 0;border-bottom:1px solid var(--line)}
+.tt td:first-child{color:var(--mut);width:46px;font:600 15px "Barlow Condensed"}
+.tt td.h{font:700 21px "Barlow Condensed";white-space:nowrap}
+.tt td.m{text-align:right;color:var(--mut);white-space:nowrap}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:15px}
+.kv span{color:var(--mut)}.kv b{font-weight:600}
+.fig{position:relative;min-height:300px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:14px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.crit{display:grid;gap:14px}
+.row{display:grid;grid-template-columns:210px 120px minmax(0,1fr);gap:4px 14px;align-items:center}
+.row .nm{font-weight:600}
+.pips{display:flex;gap:4px}.pips i{flex:1;height:9px;border-radius:2px;background:rgba(255,255,255,.08)}
+.row .wd{font:700 17px "Barlow Condensed"}
+.row .tx{grid-column:1/-1;font-size:15px;color:var(--mut)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.win{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.win:last-child{border-bottom:0}
+.win .h{font:700 22px "Barlow Condensed";white-space:nowrap}
+.win .q{font:700 16px "Barlow Condensed";white-space:nowrap}
+.days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.day{border:1px solid var(--line);border-top:3px solid var(--c,var(--line));border-radius:10px;padding:8px 4px;text-align:center;background:transparent;color:var(--ink);cursor:pointer;font:inherit;min-height:44px}
+.day[aria-current=true]{background:rgba(63,208,255,.1);border-color:var(--cy)}
+.day .d{font-size:13px;color:var(--mut);white-space:nowrap}
+.day .k{font:700 18px "Barlow Condensed"}
+.tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.tip{border:1px solid var(--line);border-radius:14px;padding:14px}
+.tip p{font-size:15px;margin:0}
+.ctx{margin:14px 0 0;padding-left:20px}.ctx li{margin-bottom:6px;font-size:15px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+table.mt{width:100%;border-collapse:collapse;font-size:15px}
+.mt th,.mt td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.mt th{color:var(--mut);font-weight:500;font-size:13.5px}
+.mt td.n{white-space:nowrap;font-weight:600}
+.memo ul{padding-left:20px;margin:0}.memo li{margin-bottom:7px}
+a{color:var(--cy)}
+.scroll{overflow-x:auto}
+.hide{display:none!important}
+.ov{position:fixed;inset:0;background:rgba(3,10,18,.82);display:grid;place-items:start center;overflow:auto;padding:24px 14px;z-index:50}
+.ov .panel{width:min(560px,100%);margin:auto}
+.ov h2{font-size:30px;margin-bottom:6px}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.opts button{min-height:56px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--ink);font:600 15px Barlow,sans-serif;cursor:pointer;padding:6px}
+.opts button[aria-pressed=true]{border-color:var(--cy);background:rgba(63,208,255,.14);color:var(--cy)}
+.acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wxs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.wxs div{border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.wxs span{display:block;font-size:12.5px;color:var(--mut)}.wxs b{font:700 19px "Barlow Condensed";white-space:nowrap}
+.err{color:#ffc9ce;font-size:14px;min-height:20px}
+@media(max-width:1100px){.two{grid-template-columns:minmax(0,1fr)}.hero{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}.controls{grid-row:auto;position:static;max-height:none}.hero{order:-2}.chartp{order:-1}}
+@media(max-width:600px){.row{grid-template-columns:minmax(0,1fr) auto}.row .pips{grid-column:1/-1;grid-row:2}.panel{padding:16px}.fish,.fish svg{width:38px;height:24px}.mt{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;color:var(--mut)}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="fsh" viewBox="0 0 32 20"><path d="M1.5 10C5.5 3.2 14.5 .8 21.5 5.6L30.5.8v18.4l-9-4.8C14.5 19.2 5.5 16.8 1.5 10Z"/></symbol></defs></svg>
+<header class="top">
+  <div><h1>Jour J</h1><div class="sub">Choisis ta cale et ta cible : on croise marée, lune, soleil et météo pour te dire si ça vaut le coup de sortir.</div></div>
+  <div class="acct"><div class="sub small" id="stamp"></div><button class="btn" id="acctBtn"></button></div>
+</header>
+
+<div class="ov hide" id="ob" role="dialog" aria-modal="true" aria-labelledby="obT"><div class="panel">
+  <h2 id="obT">Crée ton compte pêcheur</h2>
+  <p class="mut" id="obSub">Deux minutes une seule fois : ensuite la marée et la météo se chargent toutes seules à chaque sortie.</p>
+  <div class="field"><label for="obName">Prénom ou pseudo</label><input type="text" id="obName" maxlength="30" autocomplete="nickname"></div>
+  <div class="grp">Ton bateau</div>
+  <div class="opts" id="obBoat"><button data-ob="boat">J'ai un bateau</button><button data-ob="kayak">Kayak</button><button data-ob="none">Je pêche du bord</button></div>
+  <div id="obBoatF" style="margin-top:12px">
+    <div class="field"><div class="lab"><span>Longueur</span><b id="obLV"></b></div><input type="range" id="obL" min="3" max="12" step="0.5" aria-label="Longueur du bateau"></div>
+    <div class="field"><div class="lab"><span>Type</span></div><div class="seg d3" id="obT2"></div></div>
+  </div>
+  <div class="grp">Ton port d'attache</div>
+  <div class="field"><label for="obRegion">Région</label><select id="obRegion"></select></div>
+  <div class="field"><label for="obDept">Département</label><select id="obDept"></select></div>
+  <div class="field"><label for="obCommune">Commune / port</label><select id="obCommune"></select></div>
+  <div class="field"><label for="obCale">Cale de mise à l'eau</label><select id="obCale"></select></div>
+  <div class="grp">Ta cible préférée</div>
+  <div class="chips" id="obSp"></div>
+  <p class="err" id="obErr"></p>
+  <button class="btn pri" id="obSave" style="width:100%;min-height:48px;font-size:17px">C'est parti</button>
+  <p class="mut small" style="margin:10px 0 0">Ton compte est enregistré sur cet appareil.</p>
+</div></div>
+
+<main class="layout">
+  <aside class="panel controls" aria-label="Réglages">
+    <div class="grp">Ta cale</div>
+    <div class="field"><label for="region">Région</label><select id="region"></select></div>
+    <div class="field"><label for="dept">Département</label><select id="dept"></select></div>
+    <div class="field"><label for="commune">Commune / port</label><select id="commune"></select></div>
+    <div class="field" id="caleF"><label for="cale">Cale de mise à l'eau</label><select id="cale"></select>
+      <details><summary>Ta cale n'est pas dans la liste ?</summary><div class="inl"><input type="text" id="newCale" placeholder="Nom de ta cale" aria-label="Nom de ta cale"><button class="btn" id="addCale">Ajouter</button></div><p class="mut small" style="margin:6px 0 0">Elle est rattachée à la commune choisie et reste enregistrée dans ce navigateur.</p></details></div>
+    <div class="field"><label for="date">Date de sortie</label><input type="date" id="date"></div>
+
+    <div class="grp">Ta pêche</div>
+    <div class="field"><div class="lab"><span>Espèce ciblée</span></div><div class="chips" id="species"></div></div>
+    <div class="field"><label for="tech">Technique</label>
+      <select id="tech">
+        <optgroup label="Du bord"><option value="surf">Surfcasting</option><option value="rock">Rockfishing (leurre du bord)</option></optgroup>
+        <optgroup label="Embarqué"><option value="leurre">Bateau · leurre en dérive</option><option value="traine">Bateau · traîne</option><option value="ancre">Bateau · au mouillage</option><option value="kayak">Kayak</option></optgroup>
+      </select></div>
+    <p class="mut small" id="boatInfo"></p>
+
+    <div class="grp"><span>Météo</span><span class="badge" id="wxBadge"></span></div>
+    <div class="wxs" id="wxSum"></div>
+    <p class="mut small" id="wxHelp"></p>
+    <details id="wxManual"><summary>Ajuster la météo à la main</summary><div style="margin-top:10px">
+    <div class="field"><div class="lab"><span>Vent moyen</span><b id="windV"></b></div><input type="range" id="wind" min="0" max="40" step="1" aria-label="Vent en nœuds"></div>
+    <div class="field"><div class="lab"><span>Le vent vient du…</span><b id="dirV"></b></div><div class="seg d8" id="dir"></div></div>
+    <div class="field"><div class="lab"><span>Pression</span><b id="pressV"></b></div><input type="range" id="press" min="980" max="1045" step="1" aria-label="Pression en hPa"></div>
+    <div class="field"><div class="lab"><span>Tendance sur 12 h</span></div><div class="seg" id="trend"></div></div>
+    <div class="field"><div class="lab"><span>Houle</span><b id="houleV"></b></div><input type="range" id="houle" min="0" max="4" step="0.1" aria-label="Houle en mètres"></div>
+    <div class="field"><div class="lab"><span>Couleur de l'eau</span><b id="turbV"></b></div><input type="range" id="turb" min="0" max="100" step="1" aria-label="Turbidité"></div>
+    <div class="field"><div class="lab"><span>Température de l'eau</span><b id="tempV"></b></div><input type="range" id="temp" min="5" max="27" step="0.5" aria-label="Température de l'eau"></div>
+    </div></details>
+    <div class="chips" style="margin-top:8px"><button class="btn" id="wxReset">Revenir à la prévision auto</button><button class="btn" id="wxRefresh">Actualiser la prévision</button></div>
+    <details id="bulletinD" class="hide"><summary>Coller un bulletin météo marine</summary>
+      <textarea id="bulletin" placeholder="Colle ici le bulletin côte de Météo-France ou la prévision Windguru du jour"></textarea>
+      <div class="inl"><button class="btn pri" id="readB">Lire le bulletin</button></div><p class="mut small" id="bMsg" style="margin:6px 0 0"></p></details>
+  </aside>
+
+  <section class="panel hero" aria-live="polite">
+    <div>
+      <div class="verdict num" id="verdict"></div>
+      <div class="fishes" id="fishes"></div>
+      <p id="argument"></p>
+      <div id="alerts"></div>
+    </div>
+    <div class="tide" id="tidecard"></div>
+  </section>
+
+  <section class="panel chartp">
+    <h2 id="chartTitle">La marée et les coups à jouer</h2>
+    <div class="fig"><svg id="chart" role="img" aria-label="Courbe de marée sur 24 heures"></svg></div>
+    <div class="legend"><span><i style="background:var(--cy)"></i>Hauteur d'eau</span><span><i style="background:rgba(46,230,166,.4)"></i>Coup à jouer</span><span><i style="background:rgba(255,255,255,.25)"></i>Courant</span><span><i style="background:rgba(63,208,255,.12);border:1px dashed var(--cy)"></i>Mise à l'eau confortable</span><span><i style="background:#030a12;border:1px solid var(--line)"></i>Nuit</span></div>
+    <p class="mut small" style="margin-top:8px" id="tideSrcP"></p>
+  </section>
+
+  <section class="panel"><h2>Le détail, critère par critère</h2><div class="crit" id="crit"></div></section>
+
+  <section class="two">
+    <div class="panel"><h2>Les coups de la journée</h2><div id="wins"></div></div>
+    <div class="panel"><h2>Trouver le jour J</h2><p class="mut small" id="planHelp"></p><div class="days" id="days"></div></div>
+  </section>
+
+  <section class="panel"><h2 id="tipsTitle">Ce qu'on met au bout</h2><div class="tips" id="tips"></div><ul class="ctx" id="ctx"></ul></section>
+
+  <section class="panel memo"><h2>Memento du pêcheur</h2><div class="tabs" id="mtabs"></div><div id="mbody"></div></section>
+</main>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const rad=Math.PI/180, SYN=29.530588853, TP=12.42;
+const N=0,NE=45,E=90,SE=135,S_=180,SO=225,O=270,NO=315;
+
+/* Secteurs de marée : établissement (h), demi-marnage à coef 100 (m), courant max à coef 100 (nds), zone climatique */
+const SECT={
+nord:{est:11.9,U:2.8,v:2,cz:'mn',spots:"Digues et jetées, bancs de sable du large, épaves"},
+calais:{est:11.5,U:3.2,v:2,cz:'mn',spots:"Jetées de Calais, plages de Sangatte, bancs des Quénocs"},
+boul:{est:11.1,U:4,v:1.8,cz:'mn',spots:"Caps Gris-Nez et Blanc-Nez, digue Carnot, roches d'Audresselles"},
+somme:{est:10.9,U:4.5,v:1.5,cz:'me',spots:"Baie de Somme, chenaux d'estuaire, plages de Berck et Fort-Mahon"},
+dieppe:{est:10.7,U:4.3,v:1.8,cz:'me',spots:"Pieds de falaise à marée basse, jetées de Dieppe et du Tréport"},
+caux:{est:10.1,U:3.8,v:1.8,cz:'me',spots:"Platiers d'Étretat et Yport, digues de Fécamp"},
+havre:{est:9.7,U:3.6,v:1.8,cz:'me',spots:"Digue Nord du Havre, cap de la Hève, estuaire de la Seine"},
+calv:{est:9.1,U:3.5,v:1.5,cz:'me',spots:"Roches du Calvados, épaves du Débarquement, rochers de Grandcamp"},
+vaast:{est:8.5,U:3.2,v:3.5,cz:'me',spots:"Îles Saint-Marcouf, pointe de Saire, raz de Barfleur (danger)"},
+cherb:{est:7.8,U:2.9,v:2.5,cz:'mo',spots:"Digues de la rade, cap Lévi, épaves du large"},
+hague:{est:6.9,U:4.2,v:4.5,cz:'mo',spots:"Nez de Jobourg, cap de Flamanville, raz Blanchard (danger)"},
+cotw:{est:6.4,U:5.4,v:2.5,cz:'mo',spots:"Havres de la côte des Isles, plateau des Écréhou, pointe d'Agon"},
+baie:{est:6.05,U:6,v:2,cz:'mo',spots:"Archipel de Chausey, pointe du Roc, parcs de Bréville, baie du Mont"},
+malo:{est:5.95,U:5.7,v:2.5,cz:'mo',spots:"Parcs de Cancale, pointe du Grouin, Rance, plateau des Minquiers"},
+penth:{est:5.75,U:5,v:1.5,cz:'mo',spots:"Cap Fréhel, roches d'Erquy, baie de Saint-Brieuc, roches de Saint-Quay"},
+tregor:{est:5.4,U:4.6,v:2.5,cz:'mo',spots:"Archipel de Bréhat, Sept-Îles, chenaux du Trieux et du Jaudy"},
+morlaix:{est:4.9,U:4.3,v:2.5,cz:'mo',spots:"Baie de Morlaix, chenal de l'île de Batz, plages de Santec"},
+abers:{est:4.4,U:3.6,v:2.5,cz:'ir',spots:"Abers Wrac'h et Benoît, roches de Portsall, plateaux du Léon"},
+iroise:{est:3.95,U:3.2,v:3.5,cz:'ir',spots:"Chenal du Four, Molène, Fromveur (danger), pointe Saint-Mathieu"},
+rade:{est:3.8,U:3.1,v:2,cz:'ir',spots:"Goulet, pointe des Espagnols, rade, Toulinguet, Tas de Pois"},
+douarn:{est:3.6,U:2.8,v:2.5,cz:'ir',spots:"Baie de Douarnenez, cap Sizun, raz de Sein (danger)"},
+cornou:{est:3.55,U:2.4,v:1,cz:'bs',spots:"Pointe de Penmarc'h, Glénan, estuaire de l'Odet, Aven et Belon"},
+lorient:{est:3.6,U:2.3,v:1.5,cz:'bs',spots:"Île de Groix, Blavet, barre d'Étel (danger), Gâvres"},
+quib:{est:3.65,U:2.4,v:1.5,cz:'bs',spots:"Côte sauvage, Teignouse, Belle-Île, Houat et Hoëdic"},
+golfe:{est:4.7,U:1.8,v:4,cz:'bs',spots:"Golfe du Morbihan (courants violents au goulet), îles et parcs"},
+loire:{est:3.9,U:2.6,v:1.5,cz:'bs',spots:"Plateau du Four, Pierres Plates, estuaire de la Loire, pointe Saint-Gildas"},
+vendee:{est:3.9,U:2.5,v:1,cz:'bs',spots:"Rochers de l'île d'Yeu, plateau de Rochebonne, côte rocheuse des Sables"},
+charente:{est:4,U:2.8,v:1.5,cz:'ch',spots:"Pertuis d'Antioche et Breton, parcs d'Oléron, Chassiron, fort Boyard"},
+gironde:{est:4.3,U:2.5,v:3,cz:'ch',spots:"Embouchure de la Gironde, Cordouan, pointe de Grave (courants forts)"},
+arca:{est:4.4,U:1.9,v:3,cz:'aq',spots:"Passes du bassin (danger), banc d'Arguin, parcs et chenaux"},
+basque:{est:3.75,U:2,v:.8,cz:'aq',spots:"Roches de la côte basque, digues de l'Adour, fosse de Capbreton"},
+med:{est:0,U:.12,v:.3,med:1,cz:'gl',spots:"Tombants, herbiers de posidonie, digues, roches du large"}};
+
+/* Région > Département [nom, zone climat] > [commune, lat, lon, cap vers le large, secteur, cales] */
+const REG=[
+["Hauts-de-France",[
+ ["Nord (59)",null,[["Dunkerque",51.05,2.37,N,"nord",["Port du Grand Large"]],["Gravelines",50.99,2.12,N,"nord",["Port de Petit-Fort-Philippe"]]]],
+ ["Pas-de-Calais (62)",null,[["Calais",50.96,1.85,N,"calais"],["Wissant",50.89,1.66,NO,"boul",["Mise à l'eau sur la plage"]],["Audresselles",50.82,1.59,O,"boul"],["Ambleteuse",50.81,1.6,O,"boul"],["Wimereux",50.77,1.6,O,"boul"],["Boulogne-sur-Mer",50.73,1.59,O,"boul"],["Le Portel",50.71,1.57,O,"boul"],["Étaples",50.51,1.63,O,"somme"],["Berck",50.4,1.56,O,"somme"]]],
+ ["Somme (80)",null,[["Fort-Mahon-Plage",50.34,1.56,O,"somme"],["Le Crotoy",50.21,1.62,O,"somme"],["Saint-Valery-sur-Somme",50.19,1.63,NO,"somme"],["Cayeux-sur-Mer",50.18,1.49,O,"somme",["Le Hourdel","Cayeux plage"]]]]]],
+["Normandie",[
+ ["Seine-Maritime (76)",null,[["Le Tréport",50.06,1.37,NO,"dieppe"],["Dieppe",49.93,1.08,N,"dieppe"],["Saint-Valery-en-Caux",49.87,.71,N,"dieppe"],["Veules-les-Roses",49.87,.8,N,"dieppe"],["Fécamp",49.76,.37,NO,"caux"],["Yport",49.74,.31,NO,"caux"],["Étretat",49.71,.2,O,"caux"],["Le Havre",49.48,.11,O,"havre"],["Sainte-Adresse",49.5,.08,O,"havre"]]],
+ ["Calvados (14)",null,[["Honfleur",49.42,.23,N,"havre"],["Deauville / Trouville",49.37,.08,N,"havre",["Port Deauville","Port de Trouville"]],["Villers-sur-Mer",49.32,0,N,"havre"],["Dives-sur-Mer",49.29,-.1,N,"havre",["Port-Guillaume"]],["Ouistreham",49.28,-.25,N,"calv"],["Luc-sur-Mer",49.32,-.35,N,"calv"],["Courseulles-sur-Mer",49.33,-.45,N,"calv"],["Arromanches",49.34,-.62,N,"calv"],["Port-en-Bessin",49.35,-.75,N,"calv"],["Grandcamp-Maisy",49.39,-1.04,N,"calv"]]],
+ ["Manche (50)",null,[["Saint-Vaast-la-Hougue",49.59,-1.27,E,"vaast"],["Réville",49.62,-1.25,E,"vaast"],["Barfleur",49.67,-1.26,NE,"vaast"],["Fermanville",49.69,-1.47,N,"cherb",["Port du Cap Lévi"]],["Cherbourg-en-Cotentin",49.645,-1.62,N,"cherb",["Port Chantereyne"]],["Omonville-la-Rogue",49.7,-1.84,N,"cherb"],["La Hague",49.71,-1.95,O,"hague",["Port de Goury"]],["Flamanville",49.55,-1.86,O,"hague",["Port de Diélette"]],["Barneville-Carteret",49.37,-1.79,SO,"cotw",["Port de Carteret"]],["Portbail",49.33,-1.7,O,"cotw"],["Pirou",49.17,-1.6,O,"cotw"],["Gouville-sur-Mer",49.1,-1.61,O,"cotw"],["Agon-Coutainville",49.04,-1.6,O,"cotw",["Pointe d'Agon","Coutainville"]],["Hauteville-sur-Mer",48.98,-1.56,O,"cotw"],["Bréhal",48.9,-1.56,O,"cotw",["Saint-Martin-de-Bréhal"]],["Donville-les-Bains",48.85,-1.58,O,"baie"],["Granville",48.838,-1.597,O,"baie",["Port de Hérel"]],["Saint-Pair-sur-Mer",48.81,-1.57,O,"baie"],["Jullouville",48.78,-1.57,O,"baie"],["Saint-Jean-le-Thomas",48.73,-1.52,O,"baie"]]]]],
+["Bretagne",[
+ ["Ille-et-Vilaine (35)",null,[["Cancale",48.676,-1.851,E,"malo",["Port de la Houle","Port-Mer"]],["Saint-Malo",48.649,-2.025,N,"malo",["Port des Bas-Sablons","Port de Rothéneuf","Anse Solidor (Saint-Servan)"]],["Dinard",48.633,-2.06,N,"malo"],["Saint-Lunaire",48.64,-2.11,N,"malo"],["Saint-Briac-sur-Mer",48.62,-2.14,N,"malo"]]],
+ ["Côtes-d'Armor (22)",null,[["Saint-Jacut-de-la-Mer",48.6,-2.19,N,"penth"],["Saint-Cast-le-Guildo",48.63,-2.25,E,"penth"],["Erquy",48.63,-2.47,NO,"penth"],["Pléneuf-Val-André",48.59,-2.55,NO,"penth",["Port de Dahouët"]],["Saint-Brieuc",48.53,-2.73,N,"penth",["Port du Légué"]],["Binic-Étables-sur-Mer",48.6,-2.82,E,"penth"],["Saint-Quay-Portrieux",48.65,-2.83,E,"penth",["Port d'Armor","Le Portrieux"]],["Paimpol",48.78,-3.05,E,"tregor"],["Ploubazlanec",48.8,-3.03,N,"tregor",["Loguivy-de-la-Mer","Pointe de l'Arcouest"]],["Lézardrieux",48.79,-3.1,N,"tregor"],["Tréguier",48.79,-3.23,N,"tregor"],["Perros-Guirec",48.82,-3.44,N,"tregor",["Port de Perros-Guirec","Ploumanac'h"]],["Trégastel",48.83,-3.51,N,"tregor"],["Trébeurden",48.77,-3.57,O,"tregor"]]],
+ ["Finistère (29)",null,[["Locquirec",48.69,-3.64,N,"morlaix"],["Plougasnou",48.7,-3.8,N,"morlaix",["Le Diben","Primel"]],["Carantec",48.67,-3.91,N,"morlaix"],["Roscoff",48.726,-3.985,N,"morlaix",["Vieux port","Port de Bloscon"]],["Santec",48.7,-4.03,N,"morlaix"],["Plouescat",48.66,-4.17,N,"morlaix"],["Plounéour-Brignogan-Plages",48.67,-4.33,N,"abers"],["Landéda",48.6,-4.57,N,"abers",["Port de l'Aber Wrac'h"]],["Ploudalmézeau",48.56,-4.7,NO,"abers",["Portsall"]],["Lanildut",48.47,-4.75,O,"iroise"],["Le Conquet",48.36,-4.77,O,"iroise"],["Brest",48.383,-4.495,S_,"rade",["Port du Moulin Blanc","Port du Château"]],["Plougastel-Daoulas",48.37,-4.37,O,"rade",["Le Tinduff","Lauberlac'h"]],["Camaret-sur-Mer",48.28,-4.59,N,"rade"],["Crozon",48.25,-4.49,E,"rade",["Morgat","Le Fret"]],["Douarnenez",48.1,-4.33,N,"douarn",["Port de Tréboul","Port du Rosmeur"]],["Audierne",48.02,-4.54,S_,"douarn"],["Penmarc'h",47.81,-4.37,SO,"cornou",["Saint-Guénolé","Kérity"]],["Le Guilvinec",47.79,-4.28,S_,"cornou"],["Loctudy",47.83,-4.17,S_,"cornou"],["Bénodet",47.87,-4.11,S_,"cornou"],["Fouesnant",47.86,-3.97,S_,"cornou",["Port-la-Forêt","Beg Meil"]],["Concarneau",47.87,-3.92,SO,"cornou"],["Névez",47.8,-3.74,S_,"cornou",["Port Manec'h"]],["Moëlan-sur-Mer",47.77,-3.64,S_,"cornou",["Port de Doëlan"]],["Clohars-Carnoët",47.77,-3.55,S_,"cornou",["Le Pouldu"]]]],
+ ["Morbihan (56)",null,[["Guidel",47.76,-3.5,S_,"lorient"],["Larmor-Plage",47.71,-3.38,S_,"lorient",["Port de Kernével","Port de Larmor"]],["Lorient",47.74,-3.36,S_,"lorient"],["Port-Louis",47.71,-3.35,S_,"lorient",["Port de Locmalo"]],["Groix",47.65,-3.45,N,"lorient",["Port-Tudy"]],["Étel",47.66,-3.2,S_,"lorient"],["Quiberon",47.48,-3.12,S_,"quib",["Port Haliguen","Port Maria"]],["Belle-Île-en-Mer",47.35,-3.15,N,"quib",["Le Palais"]],["La Trinité-sur-Mer",47.59,-3.03,S_,"quib"],["Locmariaquer",47.57,-2.95,S_,"quib"],["Arzon",47.55,-2.89,S_,"quib",["Port du Crouesty","Port-Navalo"]],["Sarzeau",47.5,-2.79,S_,"quib",["Port de Saint-Jacques"]],["Vannes",47.65,-2.76,S_,"golfe"],["Baden",47.6,-2.91,S_,"golfe",["Port-Blanc"]],["Larmor-Baden",47.58,-2.89,S_,"golfe"],["Damgan",47.52,-2.58,S_,"loire",["Damgan","Pénerf"]]]]]],
+["Pays de la Loire",[
+ ["Loire-Atlantique (44)",null,[["Piriac-sur-Mer",47.38,-2.55,N,"loire"],["La Turballe",47.35,-2.51,O,"loire"],["Le Croisic",47.29,-2.51,NE,"loire"],["Le Pouliguen",47.27,-2.43,S_,"loire"],["Pornichet",47.26,-2.35,S_,"loire"],["Saint-Nazaire",47.27,-2.2,S_,"loire"],["Saint-Brevin-les-Pins",47.25,-2.17,O,"loire"],["Préfailles",47.13,-2.22,O,"loire"],["Pornic",47.11,-2.1,O,"loire",["Port de la Noëveillard","Vieux port"]],["La Bernerie-en-Retz",47.08,-2.04,O,"loire"]]],
+ ["Vendée (85)",null,[["Noirmoutier-en-l'Île",47.01,-2.25,O,"vendee",["Port de L'Herbaudière","Port de Noirmoutier"]],["La Barre-de-Monts",46.89,-2.15,O,"vendee",["Port de Fromentine"]],["L'Île-d'Yeu",46.73,-2.35,N,"vendee",["Port-Joinville"]],["Saint-Gilles-Croix-de-Vie",46.69,-1.94,O,"vendee"],["Les Sables-d'Olonne",46.5,-1.79,SO,"vendee",["Port Olona","La Chaume"]],["Talmont-Saint-Hilaire",46.44,-1.68,SO,"vendee",["Port Bourgenay"]],["Jard-sur-Mer",46.41,-1.58,S_,"vendee"],["La Tranche-sur-Mer",46.34,-1.44,S_,"vendee"],["L'Aiguillon-la-Presqu'île",46.33,-1.31,S_,"vendee"]]]]],
+["Nouvelle-Aquitaine",[
+ ["Charente-Maritime (17)",null,[["La Rochelle",46.15,-1.15,O,"charente",["Port des Minimes","Chef de Baie"]],["Rivedoux-Plage",46.16,-1.27,S_,"charente"],["La Flotte",46.19,-1.33,N,"charente"],["Saint-Martin-de-Ré",46.2,-1.37,N,"charente"],["Ars-en-Ré",46.21,-1.52,N,"charente"],["Fouras",45.99,-1.09,O,"charente"],["Port-des-Barques",45.95,-1.08,O,"charente"],["Saint-Denis-d'Oléron",46.03,-1.37,N,"charente"],["Saint-Georges-d'Oléron",45.97,-1.24,E,"charente",["Port de Boyardville"]],["Saint-Pierre-d'Oléron",45.91,-1.33,O,"charente",["Port de La Cotinière"]],["Le Château-d'Oléron",45.89,-1.2,E,"charente"],["La Tremblade",45.79,-1.15,O,"charente",["Ronce-les-Bains"]],["Royan",45.62,-1.03,S_,"gironde"],["Meschers-sur-Gironde",45.55,-.95,SO,"gironde"]]],
+ ["Gironde (33)",null,[["Le Verdon-sur-Mer",45.55,-1.06,E,"gironde",["Port-Médoc"]],["Lège-Cap-Ferret",44.72,-1.23,E,"arca",["Port de la Vigne"]],["Andernos-les-Bains",44.74,-1.1,S_,"arca"],["Arcachon",44.66,-1.17,N,"arca"],["La Teste-de-Buch",44.64,-1.15,N,"arca"],["Gujan-Mestras",44.64,-1.07,N,"arca"]]],
+ ["Landes (40)",null,[["Capbreton",43.64,-1.44,O,"basque"]]],
+ ["Pyrénées-Atlantiques (64)",null,[["Anglet",43.52,-1.51,O,"basque",["Port de plaisance d'Anglet"]],["Biarritz",43.48,-1.56,O,"basque",["Port des pêcheurs"]],["Saint-Jean-de-Luz / Ciboure",43.39,-1.66,NO,"basque",["Port de Saint-Jean-de-Luz","Port de Socoa"]],["Hendaye",43.37,-1.78,N,"basque"]]]]],
+["Occitanie",[
+ ["Pyrénées-Orientales (66)","gl",[["Banyuls-sur-Mer",42.48,3.13,E,"med"],["Port-Vendres",42.52,3.11,E,"med"],["Argelès-sur-Mer",42.55,3.05,E,"med",["Port-Argelès"]],["Saint-Cyprien",42.62,3.04,E,"med"],["Canet-en-Roussillon",42.7,3.04,E,"med"],["Le Barcarès",42.79,3.04,E,"med"]]],
+ ["Aude (11)","gl",[["Leucate",42.87,3.05,E,"med",["Port-Leucate"]],["Gruissan",43.1,3.1,E,"med"],["Narbonne",43.15,3.17,E,"med",["Narbonne-Plage"]]]],
+ ["Hérault (34)","gl",[["Valras-Plage",43.24,3.29,S_,"med"],["Agde",43.28,3.51,S_,"med",["Cap d'Agde","Grau d'Agde"]],["Sète",43.4,3.7,S_,"med"],["Frontignan",43.44,3.77,S_,"med"],["Palavas-les-Flots",43.53,3.93,S_,"med"],["Mauguio",43.55,3.98,S_,"med",["Port de Carnon"]],["La Grande-Motte",43.56,4.08,S_,"med"]]],
+ ["Gard (30)","gl",[["Le Grau-du-Roi",43.53,4.13,S_,"med",["Port-Camargue","Port du Grau-du-Roi"]]]]]],
+["Provence-Alpes-Côte d'Azur",[
+ ["Bouches-du-Rhône (13)","pv",[["Saintes-Maries-de-la-Mer",43.45,4.43,S_,"med"],["Port-Saint-Louis-du-Rhône",43.39,4.81,S_,"med"],["Martigues",43.33,5.04,S_,"med",["Port de Carro"]],["Sausset-les-Pins",43.33,5.11,S_,"med"],["Carry-le-Rouet",43.33,5.15,S_,"med"],["Marseille",43.29,5.36,O,"med",["Pointe-Rouge","Vieux-Port","L'Estaque"]],["Cassis",43.21,5.54,S_,"med"],["La Ciotat",43.17,5.61,S_,"med"]]],
+ ["Var (83)","pv",[["Saint-Cyr-sur-Mer",43.17,5.69,S_,"med",["Port des Lecques"]],["Bandol",43.13,5.75,S_,"med"],["Sanary-sur-Mer",43.12,5.8,S_,"med"],["Six-Fours-les-Plages",43.07,5.8,S_,"med",["Le Brusc"]],["Toulon",43.12,5.93,S_,"med"],["Saint-Mandrier-sur-Mer",43.08,5.93,N,"med"],["Hyères",43.08,6.15,S_,"med",["Port Saint-Pierre","Port de l'Ayguade"]],["Le Lavandou",43.14,6.37,S_,"med"],["Cavalaire-sur-Mer",43.17,6.53,S_,"med"],["Saint-Tropez",43.27,6.64,N,"med"],["Sainte-Maxime",43.31,6.64,S_,"med"],["Fréjus",43.42,6.75,S_,"med"],["Saint-Raphaël",43.42,6.77,S_,"med",["Vieux port","Port Santa Lucia"]]]],
+ ["Alpes-Maritimes (06)","az",[["Théoule-sur-Mer",43.51,6.94,S_,"med"],["Cannes",43.55,7.01,S_,"med",["Vieux port","Port Pierre Canto"]],["Vallauris",43.57,7.08,S_,"med",["Golfe-Juan"]],["Antibes",43.58,7.13,E,"med",["Port Vauban"]],["Saint-Laurent-du-Var",43.66,7.19,S_,"med"],["Nice",43.7,7.29,S_,"med",["Port Lympia"]],["Villefranche-sur-Mer",43.7,7.31,S_,"med"],["Menton",43.78,7.51,SE,"med"]]]]],
+["Corse",[
+ ["Corse-du-Sud (2A)","co",[["Ajaccio",41.92,8.74,SO,"med"],["Propriano",41.68,8.9,SO,"med"],["Bonifacio",41.39,9.16,S_,"med"],["Porto-Vecchio",41.59,9.28,E,"med"]]],
+ ["Haute-Corse (2B)","co",[["Bastia",42.7,9.45,E,"med"],["Macinaggio (Rogliano)",42.96,9.45,E,"med"],["Saint-Florent",42.68,9.3,N,"med"],["L'Île-Rousse",42.64,8.94,N,"med"],["Calvi",42.57,8.76,N,"med"],["Solenzara",41.86,9.4,E,"med"]]]]]];
+
+/* Normales mensuelles par zone : vent moyen (nds), direction dominante, houle (m), eau (°C) */
+const CLIM={
+mn:{w:[16,15,14,12,11,10,10,10,12,14,15,16],d:'SO',h:[1.2,1.1,1,.8,.6,.5,.5,.5,.7,1,1.1,1.2],t:[7,6,7,9,12,15,17,18,17,14,11,8]},
+me:{w:[15,14,13,11,10,9,9,9,11,13,14,15],d:'SO',h:[1.1,1,.9,.7,.6,.5,.4,.5,.6,.9,1,1.1],t:[8,7,8,10,12,15,17,18,17,15,12,10]},
+mo:{w:[16,15,14,12,11,10,10,10,11,13,15,16],d:'O',h:[1.5,1.4,1.2,1,.8,.6,.6,.6,.8,1.2,1.4,1.5],t:[10,9,9,10,12,15,17,18,17,15,13,11]},
+ir:{w:[18,17,15,13,12,11,10,10,12,15,17,18],d:'O',h:[3,2.8,2.4,1.9,1.5,1.2,1,1.1,1.5,2.2,2.7,3],t:[11,10.5,10.5,11.5,13,15,16.5,17,16.5,15,13,12]},
+bs:{w:[15,14,13,11,10,9,9,9,10,12,14,15],d:'O',h:[2.2,2,1.8,1.4,1.1,.9,.8,.8,1.1,1.6,2,2.2],t:[11,10.5,11,12.5,14.5,17,18.5,19,18,16,13.5,12]},
+ch:{w:[14,13,12,11,10,9,9,8,9,11,13,14],d:'O',h:[1.8,1.7,1.5,1.2,1,.8,.7,.7,.9,1.3,1.6,1.8],t:[10,10,11,13,16,19,20.5,21,19.5,17,14,11.5]},
+aq:{w:[12,12,11,10,9,8,8,8,8,10,11,12],d:'O',h:[2.8,2.6,2.3,1.9,1.5,1.2,1,1,1.4,2,2.5,2.8],t:[12,12,12.5,14,16.5,19.5,21.5,22,20.5,18,15,13]},
+gl:{w:[14,14,13,12,10,9,9,9,10,12,13,14],d:'NO',h:[.9,.9,.9,.8,.6,.5,.5,.5,.6,.8,.9,.9],t:[13,12.5,13,14,16.5,20,22.5,23,21.5,19,16,14]},
+pv:{w:[13,13,12,11,10,9,10,9,9,11,12,13],d:'NO',h:[.9,.9,.9,.8,.6,.5,.5,.5,.6,.8,.9,.9],t:[13.5,13,13.5,14.5,17,21,23,23.5,22,19.5,16.5,14.5]},
+az:{w:[8,8,8,8,7,7,6,6,7,8,8,8],d:'E',h:[.7,.7,.7,.6,.5,.4,.3,.4,.5,.7,.8,.7],t:[13.5,13,13.5,15,18,22,24,24.5,22.5,20,17,14.5]},
+co:{w:[12,12,11,10,9,8,8,8,9,11,12,12],d:'O',h:[1,1,.9,.8,.6,.5,.4,.4,.6,.8,1,1],t:[14,13.5,14,15,18,22,24.5,25,23,20.5,17.5,15]}};
+
+const SP=[
+{id:'bar',n:'Bar',full:'le bar',mu:85,sd:24,press:{fb:.95,b:1,s:.65,h:.5,fh:.3},turb:45,light:{aube:1,jour:.45,crep:1,nuit:.8},season:[.35,.2,.2,.45,.7,.8,.85,.9,1,1,.8,.5],temp:[11,20],tech:{surf:.9,rock:1,leurre:1,traine:.85,ancre:.7,kayak:1},ressac:1,win:[{r:'PM',a:-3,b:1,l:'Fin de montant, début du perdant'},{r:'BM',a:0,b:2,l:'Reprise du flot (estuaires, passes)'}],note:"Le bar chasse dans l'écume et le courant : gros coefs et eau un peu teintée le mettent en confiance."},
+{id:'royale',n:'Dorade royale',full:'la royale',mu:55,sd:20,press:{fb:.4,b:.6,s:1,h:.75,fh:.5},turb:22,light:{aube:.9,jour:.8,crep:.9,nuit:.5},season:[.05,.05,.1,.3,.6,.85,1,1,.95,.7,.3,.1],temp:[15,24],tech:{surf:.85,rock:.8,leurre:.7,traine:.3,ancre:1,kayak:.85},win:[{r:'PM',a:-2.5,b:1,l:"Montant sur les parcs et l'estran"}],note:"La royale aime l'eau calme, claire et tiède : elle monte sur les parcs avec le flot, plutôt en petits et moyens coefs."},
+{id:'grise',n:'Dorade grise',full:'le griset',mu:60,sd:24,press:{fb:.45,b:.65,s:1,h:.8,fh:.55},turb:20,light:{aube:.85,jour:.9,crep:.9,nuit:.4},season:[.05,.05,.1,.35,.8,.95,1,.95,.8,.5,.2,.05],temp:[12,22],tech:{surf:.5,rock:.75,leurre:.6,traine:.2,ancre:1,kayak:.85},win:[{r:'PM',a:-1.5,b:1.5,l:"Autour de l'étale de pleine mer"},{r:'BM',a:-1,b:1,l:'Étale de basse mer (roches du large)'}],note:"Le griset tient en banc sur roches et épaves : étales et coefs moyens facilitent la tenue du mouillage."},
+{id:'lieu',n:'Lieu jaune',full:'le lieu',mu:62,sd:22,press:{fb:.8,b:.95,s:.85,h:.6,fh:.4},turb:18,light:{aube:1,jour:.6,crep:1,nuit:.35},season:[.6,.55,.65,.85,.95,.85,.7,.65,.75,.9,.85,.7],temp:[9,17],tech:{surf:.3,rock:.8,leurre:1,traine:.8,ancre:.5,kayak:.95},win:[{r:'PM',a:-1.5,b:1,l:'Étale de pleine mer sur les têtes de roche'},{r:'BM',a:-1,b:1.5,l:'Étale de basse mer sur les épaves'}],note:"Le lieu chasse collé aux structures : un courant modéré le met en embuscade, trop de courant et tu ne tiens plus le fond."},
+{id:'maq',n:'Maquereau',full:'le maquereau',mu:70,sd:30,press:{fb:.5,b:.7,s:1,h:.95,fh:.8},turb:15,light:{aube:.85,jour:1,crep:.85,nuit:.15},season:[.02,.02,.05,.2,.6,.95,1,1,.85,.5,.15,.03],temp:[13,22],tech:{surf:.4,rock:.85,leurre:1,traine:1,ancre:.6,kayak:.95},win:[{r:'PM',a:-2,b:2,l:'Autour de la pleine mer, eau claire'}],note:"Le maquereau suit le soleil et l'eau claire : bancs en surface l'été, repère les chasses d'oiseaux."},
+{id:'cab',n:'Cabillaud',full:'le cabillaud',mu:55,sd:25,press:{fb:.75,b:.9,s:.85,h:.65,fh:.45},turb:40,light:{aube:.8,jour:.55,crep:.85,nuit:1},season:[1,.95,.7,.35,.15,.05,.03,.05,.15,.45,.8,1],temp:[6,12],tech:{surf:.85,rock:.55,leurre:.9,traine:.3,ancre:1,kayak:.6},win:[{r:'BM',a:-1,b:1.5,l:'Étale de basse mer sur les épaves'},{r:'PM',a:-1.5,b:1,l:'Étale de pleine mer, montant de nuit du bord'}],note:"Le cabillaud, c'est l'hiver en Manche : épaves du large en bateau, plages brassées la nuit du bord."},
+{id:'plat',n:'Poissons plats',full:'les plats',mu:78,sd:25,press:{fb:.8,b:.9,s:.85,h:.65,fh:.5},turb:55,light:{aube:.8,jour:.5,crep:.9,nuit:1},season:[.35,.3,.45,.75,.9,.8,.7,.7,.85,.95,.8,.5],temp:[9,18],tech:{surf:1,rock:.3,leurre:.4,traine:.1,ancre:.85,kayak:.7},ressac:1,win:[{r:'PM',a:-3.5,b:0,l:'Deuxième moitié du montant sur la plage'},{r:'PM',a:0,b:1.5,l:'Début du perdant'}],note:"Sole, plie et turbot mangent quand la vague remue le sable : eau teintée, nuit et coefs soutenus."}];
+const TECH={surf:{n:'surfcasting',shore:1,wind:30,houle:3.2},rock:{n:'rockfishing',shore:1,wind:22,houle:1.6},leurre:{n:'leurre en dérive',boat:1,adj:0},traine:{n:'traîne',boat:1,adj:1},ancre:{n:'pêche au mouillage',boat:1,adj:-2},kayak:{n:'kayak',boat:1,kayak:1,wind:12,houle:1}};
+const BTYPES=[['semi','Semi-rigide',1,.1],['open','Coque open',0,0],['cab','Cabine',2,.2]];
+const TIPS={
+bar:{shore:["Minnows 12–14 cm flottants, stickbait de surface à l'aube, shad 10–12 cm sur tête 10–20 g dans le courant","Couteau, gravette ou ver noir, crabe mou, lançon vif","Leurres 15–30 g. Surfcasting : plomb 100–150 g, grappin si ça tire","Zones de ressac, pointes rocheuses, sorties d'estuaire, bancs de sable en fin de montant"],boat:["Shad 12–16 cm tête 20–40 g en dérive, jig 30–60 g dans les veines de courant, stickbait sur les chasses","Lançon vif en traîne lente, seiche ou crabe au mouillage","Tête plombée : compte environ 20 g par nœud de courant pour commencer","Têtes de roche et plateaux, raz et passes, lignes d'écume"]},
+royale:{shore:["Petits leurres crabe ou jigs légers 10–20 g grattés au fond","Couteau, crabe vert, moule, bibi","Bas de ligne 30–35/100, hameçons 1 à 2/0 forts, plomb 80–120 g","Parcs à huîtres et à moules, estuaires vaseux, plages abritées"],boat:["Micro-jigs et leurres crabe grattés sur fond de sable coquillier","Crabe, couteau, moules, amorçage de moules écrasées","Plomb coulissant 40–80 g, ligne fine, ferrage différé","Bordures de parcs, chenaux d'estuaire, fonds de 5 à 15 m"]},
+grise:{shore:["Micro-jigs 7–15 g sur les digues profondes","Ver américain ou arénicole, couteau, crevette, lanière de calamar","Bas de ligne 22–26/100, hameçons n°4 à 1, plomb 60–100 g","Digues et jetées avec du fond, bordures roche-sable"],boat:["Micro-jigs 10–20 g, tenya, inchiku légers","Ver, calamar, crevette, amorçage au sac","Bas de ligne 22–26/100, plomb 80–150 g selon le courant","Roches et épaves de 10 à 30 m, à l'étale sur les sommets"]},
+lieu:{shore:["Shad 10 cm tête 15–25 g, slug texan 12 cm, jerkbait plongeant","Lanière de maquereau ou lançon","Tête 15–25 g, plus lourd si le courant décolle le leurre","Pointes rocheuses avec du fond, bordures de laminaires, à l'aube"],boat:["Shad 12–15 cm tête 20–80 g, slug 15–18 cm, jig 40–120 g en lent","Lançon vif ou mort manié","Le leurre doit toucher le fond : tête lourde en vive-eau, légère aux étales","Têtes de roche, épaves, tombants, bordures de champs d'algues"]},
+maq:{shore:["Mitraillette plumes ou paillettes, cuillère ondulante 20–30 g, petit jig","Lanière de maquereau sous flotteur","Plomb 60–100 g sous la mitraillette","Bouts de digue, pointes, eau claire et profonde"],boat:["Mitraillette 6–8 hameçons, jig 20–40 g, traîne lente à la cuillère","Pas besoin, le leurre suffit","Plomb 80–150 g selon le fond, ou déviateur à la traîne","Chasses d'oiseaux, bordures de courant, fonds de 5 à 20 m"]},
+cab:{shore:["Rarement au leurre du bord, tente le shad 12 cm de nuit","Paquet de vers, couteau, calamar en lanière","Plomb grappin 150–200 g, hameçons 1/0 à 3/0, bas de ligne 40/100","Plages bien brassées la nuit en hiver, digues profondes"],boat:["Shad 15–20 cm tête 60–150 g, pirk 150–300 g","Calamar, seiche, lanière de maquereau","Plombée forte : 150–300 g selon le fond et le courant","Épaves et cassures du large, à l'étale"]},
+plat:{shore:["Peu concerné, un petit shad gratté au fond peut prendre un turbot","Arénicole, néréide, couteau, gravette, avec perles et palettes","Hameçons fins n°4 à 1 à longue hampe, plomb 100–175 g, grappin si courant latéral","Plages de sable, baïnes et cuvettes, embouchures"],boat:["Dérive lente sur le sable : shad 10 cm gratté pour turbot et barbue","Lançon et lanière de maquereau pour le turbot, vers pour sole et plie","Plomb 60–120 g, bas de ligne long","Bancs de sable, cassures sable-gravier"]}};
+const DIRS=[['N',0],['NE',45],['E',90],['SE',135],['S',180],['SO',225],['O',270],['NO',315]];
+const TRENDS=[['fb','↓↓','forte baisse'],['b','↓','baisse'],['s','→','stable'],['h','↑','hausse'],['fh','↑↑','forte hausse']];
+const TRL={fb:'en forte baisse',b:'en baisse',s:'stable',h:'en hausse',fh:'en forte hausse'};
+
+/* index des cales */
+const PLACES=[];
+REG.forEach(([r,depts])=>depts.forEach(([d,cz,cs])=>cs.forEach(([n,lat,lon,sea,sec,cales])=>PLACES.push({r,d,n,lat,lon,sea,sec,cz:cz||SECT[sec].cz,cales:cales||['Port / cale principale']}))));
+const keyOf=p=>p.d+'|'+p.n;
+
+const todayStr=()=>new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris'}).format(new Date());
+const addDays=(s,n)=>{const [y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d+n)).toISOString().slice(0,10)};
+const DEF={place:'Manche (50)|Granville',cale:'Port de Hérel',date:todayStr(),sp:'bar',tech:'surf',boatL:5.5,boatT:'open',wxAuto:true,wind:12,dir:'O',press:1016,trend:'s',houle:1,turb:35,temp:12,custom:{}};
+let S=Object.assign({},DEF);
+try{const s=JSON.parse(localStorage.getItem('jourj2')||'null');if(s){Object.assign(S,s);if(!S.date||S.date<todayStr())S.date=todayStr();if(!PLACES.some(p=>keyOf(p)===S.place))S.place=DEF.place}}catch(e){}
+const save=()=>{try{localStorage.setItem('jourj2',JSON.stringify(S))}catch(e){}};
+const place=()=>PLACES.find(p=>keyOf(p)===S.place);
+const calesOf=p=>p.cales.concat(S.custom[keyOf(p)]||[]);
+
+function normals(p,month){const c=CLIM[p.cz];return{wind:c.w[month],dir:c.d,houle:c.h[month],temp:c.t[month],press:1016,trend:'s',turb:Math.round(clamp(20+c.h[month]*12,15,55))}}
+/* ---------- données en direct : Open-Meteo (prévision + modèle marin) ---------- */
+const LIVE={};
+const dayIdx=(times,ds)=>Array.isArray(times)?times.indexOf(ds+'T00:00'):-1;
+const nearest8=deg=>DIRS[Math.round((((deg%360)+360)%360)/45)%8][0];
+const num=x=>typeof x==='number'&&isFinite(x);
+async function loadLive(p,force){const k=keyOf(p),L=LIVE[k];
+  if(!force&&L&&(L.status==='loading'||(L.status==='ok'&&Date.now()-L.at<2*36e5)))return;
+  LIVE[k]={status:'loading'};if(keyOf(place())===k)render();
+  const q=`latitude=${p.lat}&longitude=${p.lon}&timezone=Europe%2FParis`;
+  const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),12000);
+  try{const [a,b]=await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?${q}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,pressure_msl&wind_speed_unit=kn&forecast_days=10`,{signal:ctl.signal}).then(r=>{if(!r.ok)throw new Error('http');return r.json()}),
+      fetch(`https://marine-api.open-meteo.com/v1/marine?${q}&hourly=wave_height,sea_surface_temperature,sea_level_height_msl&cell_selection=sea&forecast_days=8`,{signal:ctl.signal}).then(r=>r.ok?r.json():null).catch(()=>null)]);
+    if(!a||!a.hourly||!Array.isArray(a.hourly.time))throw new Error('format');
+    LIVE[k]={status:'ok',at:Date.now(),wx:a.hourly,mar:b&&b.hourly&&Array.isArray(b.hourly.time)?b.hourly:null}}
+  catch(e){LIVE[k]={status:'err',at:Date.now()}}
+  clearTimeout(to);if(keyOf(place())===k)render()}
+function liveWx(k,ds){const L=LIVE[k];if(!L||L.status!=='ok')return null;const w=L.wx,i0=dayIdx(w.time,ds);if(i0<0||i0+20>=w.time.length)return null;
+  let ws=0,n=0,vx=0,vy=0,g=0;for(let h=6;h<=20;h++){const i=i0+h,sp=w.wind_speed_10m[i],dr=w.wind_direction_10m[i],gu=w.wind_gusts_10m[i];if(num(sp)){ws+=sp;n++;if(num(dr)){vx+=sp*Math.sin(dr*rad);vy+=sp*Math.cos(dr*rad)}}if(num(gu))g=Math.max(g,gu)}
+  if(!n)return null;const p12=w.pressure_msl[i0+12],p0=w.pressure_msl[i0];const dp=num(p12)&&num(p0)?p12-p0:0;
+  const out={wind:Math.round(ws/n),dir:nearest8(Math.atan2(vx,vy)/rad),gust:Math.round(g),press:num(p12)?Math.round(p12):1016,trend:dp<=-6?'fb':dp<=-2?'b':dp>=6?'fh':dp>=2?'h':'s',houle:null,temp:null};
+  const m=L.mar;if(m){const j0=dayIdx(m.time,ds);if(j0>=0&&j0+20<m.time.length){let hx=null,ts=0,tn=0;for(let h=6;h<=20;h++){const wv=m.wave_height&&m.wave_height[j0+h],st=m.sea_surface_temperature&&m.sea_surface_temperature[j0+h];if(num(wv))hx=Math.max(hx??0,wv);if(num(st)){ts+=st;tn++}}if(hx!=null)out.houle=Math.round(clamp(hx,0,4)*10)/10;if(tn)out.temp=Math.round(clamp(ts/tn,5,27)*2)/2}}
+  return out}
+function liveTide(k,ds,U,c){const L=LIVE[k];if(!L||L.status!=='ok'||!L.mar||!Array.isArray(L.mar.sea_level_height_msl))return null;const m=L.mar,sl=m.sea_level_height_msl,i0=dayIdx(m.time,ds);if(i0<0||i0+24>=sl.length)return null;
+  let mn=1e9,mx=-1e9;for(let i=i0;i<=i0+24;i++){if(!num(sl[i]))return null;mn=Math.min(mn,sl[i]);mx=Math.max(mx,sl[i])}
+  if(mx-mn<.35*2*U*c/100)return null;
+  const hws=[],lws=[];for(let i=Math.max(1,i0-8);i<=Math.min(sl.length-2,i0+32);i++){const a=sl[i-1],b=sl[i],d=sl[i+1];if(!num(a)||!num(b)||!num(d))continue;const den=a-2*b+d;if((b>a&&b>=d)||(b<a&&b<=d)){const off=den?clamp(.5*(a-d)/den,-.5,.5):0;(b>a?hws:lws).push(i-i0+off)}}
+  if(!hws.length)return null;
+  const height=t=>{const x=clamp(i0+t,0,sl.length-1),j=Math.floor(x),f=x-j,y0=sl[j],y1=sl[Math.min(j+1,sl.length-1)];return num(y0)&&num(y1)?y0+(y1-y0)*f:0};
+  const hw0=hws.find(t=>t>=-3)??hws[0];return{hws,lws,height,min:mn,max:mx,hw0}}
+function applyAuto(St,ds){St.gust=0;if(!St.wxAuto)return 'manual';const p=PLACES.find(x=>keyOf(x)===St.place);Object.assign(St,normals(p,+ds.slice(5,7)-1));
+  const lv=liveWx(St.place,ds);if(!lv)return 'normal';Object.assign(St,{wind:lv.wind,dir:lv.dir,press:lv.press,trend:lv.trend,gust:lv.gust});if(lv.houle!=null){St.houle=lv.houle;St.turb=Math.round(clamp(20+lv.houle*12,15,55))}if(lv.temp!=null)St.temp=lv.temp;return 'live'}
+function applyNormals(){return applyAuto(S,S.date)}
+
+function tzOff(ms){const pa=new Intl.DateTimeFormat('en-US',{timeZone:'Europe/Paris',hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date(ms));const g=t=>+pa.find(x=>x.type===t).value;return (Date.UTC(g('year'),g('month')-1,g('day'),g('hour'),g('minute'))-ms)/36e5}
+const jd=ms=>ms/864e5+2440587.5;
+function moonAge(J){let a=((J-2451550.26)/SYN)%1;if(a<0)a+=1;return a*SYN}
+function coefAt(J){const L=J-1.5,age=moonAge(L),sp=Math.cos(4*Math.PI*age/SYN),d=L-2451545;const pg=Math.cos((134.963+13.064993*d)*rad);const eq=Math.cos(2*(280.46+.9856474*d)*rad);const c=68+30*sp+(10*pg+5*eq)*(.65+.35*sp);return Math.round(Math.min(120,Math.max(20,c)))}
+function phaseName(a){return ['Nouvelle lune','Premier croissant','Premier quartier','Gibbeuse croissante','Pleine lune','Gibbeuse décroissante','Dernier quartier','Dernier croissant','Nouvelle lune'][Math.floor((a/SYN)*8+.5)]}
+function sunTimes(y,m,d,lat,lon,off){const n=Math.round((Date.UTC(y,m-1,d)-Date.UTC(y,0,0))/864e5);const g=2*Math.PI/365*(n-1);const eqt=229.18*(.000075+.001868*Math.cos(g)-.032077*Math.sin(g)-.014615*Math.cos(2*g)-.040849*Math.sin(2*g));const dec=.006918-.399912*Math.cos(g)+.070257*Math.sin(g)-.006758*Math.cos(2*g)+.000907*Math.sin(2*g)-.002697*Math.cos(3*g)+.00148*Math.sin(3*g);const ha=Math.acos(Math.cos(90.833*rad)/(Math.cos(lat*rad)*Math.cos(dec))-Math.tan(lat*rad)*Math.tan(dec))/rad;return{sr:(720-4*(lon+ha)-eqt)/60+off,ss:(720-4*(lon-ha)-eqt)/60+off}}
+function astro(P,ds){const [y,m,d]=ds.split('-').map(Number);const noon=Date.UTC(y,m-1,d,12),off=tzOff(noon);const J=jd(noon-off*36e5);const age=moonAge(J);let hw=12+.8412*age-P.lon/15+off+P.est;hw=((hw%TP)+TP)%TP;const hws=[-1,0,1,2].map(k=>hw+k*TP),lws=[-1,0,1,2].map(k=>hw-TP/2+k*TP);const st=sunTimes(y,m,d,P.lat,P.lon,off);return{y,m,d,month:m-1,off,age,ill:(1-Math.cos(2*Math.PI*age/SYN))/2,coef:coefAt(J),coefN:coefAt(J+1),hw0:hw,hws,lws,sr:st.sr,ss:st.ss}}
+const fmt=h=>{h=((h%24)+24)%24;let H=Math.floor(h),M=Math.round((h-H)*60);if(M===60){H=(H+1)%24;M=0}return String(H).padStart(2,'0')+'h'+String(M).padStart(2,'0')};
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+const coefType=c=>c<45?'Mortes-eaux':c<70?'Marée moyenne':c<95?'Vives-eaux':'Grandes vives-eaux';
+const angDiff=(a,b)=>{const x=Math.abs(a-b)%360;return x>180?360-x:x};
+const word=v=>v>=.85?'Excellent':v>=.65?'Favorable':v>=.45?'Correct':v>=.25?'Faible':'Défavorable';
+const colOf=v=>v>=.85?'var(--au)':v>=.65?'var(--em)':v>=.45?'var(--cy)':v>=.25?'var(--or)':'var(--rd)';
+const verdictOf=(s,danger)=>danger?{t:'Reste au port',c:'var(--rd)'}:s>=85?{t:'Grosse journée en vue',c:'var(--au)'}:s>=65?{t:'Ça devrait mordre',c:'var(--em)'}:s>=40?{t:'Ça se tente',c:'var(--or)'}:{t:'Petite pêche',c:'var(--rd)'};
+const LIGHTN={aube:"à l'aube",crep:'au coucher du soleil',jour:'en plein jour',nuit:'de nuit'};
+
+function limits(S){const T=TECH[S.tech];if(!T.boat||T.kayak)return{wind:T.wind,houle:T.houle};const bt=BTYPES.find(b=>b[0]===S.boatT)||BTYPES[1];return{wind:Math.round(clamp(8+1.9*S.boatL+bt[2]+T.adj,12,32)),houle:+clamp(.3+.22*S.boatL+bt[3],.8,3.2).toFixed(1)}}
+
+function compute(S,ds){
+  const pl=PLACES.find(p=>keyOf(p)===S.place),sec=SECT[pl.sec],P=Object.assign({},sec,pl,{cz:pl.cz});
+  const sp=SP.find(s=>s.id===S.sp),T=TECH[S.tech],A=astro(P,ds),L=limits(S),med=!!P.med;
+  const c=A.coef,amp=P.U*c/100,Z0=med?.3:1.3*P.U;
+  let height=t=>Z0+amp*Math.cos(2*Math.PI*(t-A.hw0)/TP),hmin=0,hmax=med?1:2.6*P.U,tideSrc='astro';
+  const lt=med?null:liveTide(S.place,ds,P.U,c);
+  if(lt){A.hws=lt.hws;A.lws=lt.lws;A.hw0=lt.hw0;height=lt.height;hmin=Math.floor((lt.min-.4)*2)/2;hmax=Math.ceil((lt.max+.4)*2)/2;tideSrc='live'}
+  const cur=t=>P.v*c/100*Math.abs(Math.sin(2*Math.PI*(t-A.hw0)/TP));
+  const phase=t=>(t>=A.sr-1&&t<A.sr+1.5)?'aube':(t>=A.ss-1.5&&t<A.ss+1)?'crep':(t>A.sr&&t<A.ss)?'jour':'nuit';
+  const wins=[];
+  const defs=med?[{a:A.sr-1,b:A.sr+2,l:'Coup du matin'},{a:A.ss-2,b:A.ss+1,l:'Coup du soir'}].concat(sp.light.nuit>=.8?[{a:A.ss+1.5,b:A.ss+4.5,l:'Début de nuit'}]:[]):[];
+  if(!med)for(const w of sp.win)for(const r of (w.r==='PM'?A.hws:A.lws))defs.push({a:r+w.a,b:r+w.b,l:w.l,ref:w.r});
+  for(const w of defs){let a=w.a,b=w.b;if(b<=0||a>=24)continue;a=Math.max(0,a);b=Math.min(24,b);if(b-a<.5)continue;let q=0,n=0,ph={};
+    for(let t=a;t<=b+1e-9;t+=.25){const p=phase(t);ph[p]=(ph[p]||0)+1;let f=sp.light[p];const v=cur(t);if(T.boat)f*=v>2.5?.65:v>1.6?.85:1;else if(v>2.8)f*=.85;if(p==='nuit'&&T.kayak)f*=.45;if(p==='nuit'&&S.tech==='rock')f*=.8;q+=f;n++}
+    wins.push({a,b,q:q/n,l:w.l,ref:w.ref,dom:Object.entries(ph).sort((x,y)=>y[1]-x[1])[0][0]})}
+  wins.sort((x,y)=>y.q-x.q);
+  const good=wins.filter(w=>w.q>=.7).length;
+  const sWin=wins.length?clamp(wins[0].q+.05*Math.max(0,good-1),0,1):.15;
+  let sTide=med?.65:Math.exp(-(((c-sp.mu)/sp.sd)**2)/2);const revif=A.coefN>A.coef;if(!med&&revif&&(sp.id==='bar'||sp.id==='lieu'))sTide=Math.min(1,sTide+.05);
+  const dirDeg=DIRS.find(d=>d[0]===S.dir)[1],dd=angDiff(dirDeg,P.sea),exp=dd<60?'on':dd>120?'off':'side';
+  let sWind=1;const wr=S.wind/L.wind,hr=S.houle/L.houle;if(wr>.5)sWind=Math.max(0,1-(wr-.5)/.5);if(hr>.5)sWind*=Math.max(0,1-(hr-.5)/.5);
+  let ressac=false;if(T.shore&&sp.ressac&&exp!=='off'&&S.wind>=6&&S.wind<=20&&S.houle>=.5&&S.houle<=2){sWind=Math.min(1,sWind+.2);ressac=true}
+  const flat=T.shore&&sp.id==='bar'&&S.wind<4&&S.houle<.3;if(flat)sWind*=.8;
+  const danger=S.wind>=L.wind||S.houle>=L.houle;
+  if(S.gust&&S.gust>=L.wind+6)sWind*=.85;
+  const boatName=T.kayak?'ton kayak':T.boat?`ton ${BTYPES.find(b=>b[0]===S.boatT)[1].toLowerCase()} de ${String(S.boatL).replace('.',',')} m`:'';
+  const alerts=[],notes=[];
+  if(S.gust&&S.gust>=L.wind+6&&!danger)alerts.push(`Rafales annoncées jusqu'à ${S.gust} nœuds : par moments ça dépassera ta limite.`);
+  if(danger)alerts.push(`${S.wind>=L.wind?'Vent de '+S.wind+' nœuds':'Houle de '+S.houle.toFixed(1).replace('.',',')+' m'} : au-delà de ce qui est raisonnable ${T.boat?'avec '+boatName:'en '+T.n} (${L.wind} nœuds, ${String(L.houle).replace('.',',')} m). Tu restes à terre.`);
+  if(T.boat&&exp==='off'&&S.wind>=(T.kayak?8:15))alerts.push(`Vent de terre de ${S.wind} nœuds : mer plate sous la côte mais ça pousse au large. ${T.kayak?'En kayak, reste collé à la côte ou renonce.':'Garde de la marge pour rentrer.'}`);
+  if(T.boat&&!med&&c>=90&&S.wind>=15)alerts.push("Gros coef et vent soutenu : la mer se creuse vite quand le vent est contre le courant, surtout à mi-marée.");
+  if(T.boat&&P.v>=3.5)alerts.push(`Secteur à forts courants (jusqu'à ${(P.v*1.2).toFixed(0)} nœuds en vive-eau) : ne passe les raz qu'à l'étale${S.boatL<6||T.kayak?', et avec '+boatName+', reste à l\'écart en vive-eau':''}.`);
+  if(S.tech==='rock'&&S.houle>=1.2&&!danger)alerts.push('Houle marquée sur les roches : observe trois séries avant de t\'installer, chaussures crantées, jamais dos à la mer.');
+  if(T.shore&&!med&&c>=95&&P.U>=5)alerts.push("Grande marée sur un estran immense : la mer remonte vite et contourne les bancs. Repère ton chemin de retour avant la basse mer.");
+  let launch=null;
+  if(T.boat&&!T.kayak&&!med&&P.U>=3.5){const mid=(A.sr+A.ss)/2,h=A.hws.filter(t=>t>-3&&t<27).sort((x,y)=>Math.abs(x-mid)-Math.abs(y-mid))[0];if(h!=null){launch={a:h-3,b:h+3};notes.push(`Fort marnage : beaucoup de cales découvrent à basse mer. Mise à l'eau et retour confortables entre ${fmt(h-3)} et ${fmt(h+3)}. Vérifie la praticabilité de ta cale sur place.`)}}
+  if(med)notes.push("En Méditerranée la marée est négligeable : ce sont le vent, la houle et la lumière qui font la pêche.");
+  let sPress=sp.press[S.trend];if(S.press>1030&&S.trend==='s')sPress-=.1;if(S.press<1000&&(S.trend==='b'||S.trend==='fb')&&(sp.id==='bar'||sp.id==='lieu'))sPress+=.05;sPress=clamp(sPress,0,1);
+  const effT=clamp(S.turb+S.houle*8+(med?0:Math.max(0,c-90)*.4),0,100);let sWater=Math.max(0,1-Math.abs(effT-sp.turb)/60);if(effT>85&&sp.id!=='plat')sWater*=.6;
+  let season=sp.season[A.month];if(med&&(sp.id==='lieu'||sp.id==='cab'))season*=.2;
+  const [t0,t1]=sp.temp,dist=S.temp<t0?t0-S.temp:S.temp>t1?S.temp-t1:0,sSeason=season*Math.max(.2,1-.12*dist);
+  const W={tide:.22,win:.2,wind:.18,press:.14,water:.12,season:.14};
+  let tot=W.tide*sTide+W.win*sWin+W.wind*sWind+W.press*sPress+W.water*sWater+W.season*sSeason;
+  tot*=sp.tech[S.tech];if(sSeason<.3)tot*=.55+1.5*sSeason;
+  let score=Math.round(clamp(tot,0,1)*100);if(danger)score=Math.min(score,20);
+  return{hmin,hmax,tideSrc,range:lt?lt.max-lt.min:2*amp,P,sp,T,A,L,c,amp,Z0,med,height,cur,phase,wins,score,danger,alerts,notes,launch,exp,ressac,flat,effT,revif,boatName,vmaxNow:P.v*c/100,crit:{tide:sTide,win:sWin,wind:sWind,press:sPress,water:sWater,season:sSeason},techF:sp.tech[S.tech]}}
+
+/* ---------- UI ---------- */
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const regions=[...new Set(PLACES.map(p=>p.r))];
+function fillPlaceSelects(){const p=place();
+  $('region').innerHTML=regions.map(r=>`<option${r===p.r?' selected':''}>${esc(r)}</option>`).join('');
+  const depts=[...new Set(PLACES.filter(x=>x.r===p.r).map(x=>x.d))];
+  $('dept').innerHTML=depts.map(d=>`<option${d===p.d?' selected':''}>${esc(d)}</option>`).join('');
+  $('commune').innerHTML=PLACES.filter(x=>x.d===p.d).map(x=>`<option value="${esc(keyOf(x))}"${keyOf(x)===S.place?' selected':''}>${esc(x.n)}</option>`).join('');
+  const cl=calesOf(p);if(!cl.includes(S.cale))S.cale=cl[0];
+  $('cale').innerHTML=cl.map(c=>`<option${c===S.cale?' selected':''}>${esc(c)}</option>`).join('');
+  $('cale').disabled=cl.length<2}
+$('species').innerHTML=SP.map(s=>`<button class="chip" data-sp="${s.id}">${s.n}</button>`).join('');
+$('dir').innerHTML=DIRS.map(d=>`<button data-dir="${d[0]}">${d[0]}</button>`).join('');
+$('trend').innerHTML=TRENDS.map(t=>`<button data-tr="${t[0]}" title="${t[2]}" aria-label="Pression ${t[2]}">${t[1]}</button>`).join('');
+$('date').min=todayStr();
+function syncInputs(){for(const k of['date','tech','wind','press','houle','turb','temp'])$(k).value=S[k];fillPlaceSelects()}
+const rerender=()=>{save();render()};
+const placeChanged=()=>{if(S.wxAuto)applyNormals();syncInputs();rerender();loadLive(place())};
+$('region').onchange=e=>{S.place=keyOf(PLACES.find(p=>p.r===e.target.value));S.cale='';placeChanged()};
+$('dept').onchange=e=>{S.place=keyOf(PLACES.find(p=>p.d===e.target.value));S.cale='';placeChanged()};
+$('commune').onchange=e=>{S.place=e.target.value;S.cale='';placeChanged()};
+$('cale').onchange=e=>{S.cale=e.target.value;rerender()};
+$('addCale').onclick=()=>{const v=$('newCale').value.trim().slice(0,60);if(!v)return;const k=S.place;S.custom[k]=(S.custom[k]||[]).concat(v);S.cale=v;$('newCale').value='';fillPlaceSelects();rerender()};
+$('date').onchange=e=>{if(!e.target.value)return;S.date=e.target.value;if(S.wxAuto)applyNormals();syncInputs();rerender()};
+$('tech').onchange=e=>{S.tech=e.target.value;rerender()};
+$('acctBtn').onclick=()=>openOb();
+for(const k of['wind','press','houle','turb','temp'])$(k).oninput=e=>{S[k]=+e.target.value;S.wxAuto=false;rerender()};
+$('species').onclick=e=>{const b=e.target.closest('[data-sp]');if(b){S.sp=b.dataset.sp;rerender()}};
+$('dir').onclick=e=>{const b=e.target.closest('[data-dir]');if(b){S.dir=b.dataset.dir;S.wxAuto=false;rerender()}};
+$('trend').onclick=e=>{const b=e.target.closest('[data-tr]');if(b){S.trend=b.dataset.tr;S.wxAuto=false;rerender()}};
+$('wxRefresh').onclick=()=>loadLive(place(),true);
+$('wxReset').onclick=()=>{S.wxAuto=true;applyNormals();syncInputs();rerender()};
+$('days').onclick=e=>{const b=e.target.closest('[data-day]');if(!b)return;S.date=b.dataset.day;if(S.wxAuto)applyNormals();syncInputs();rerender();if(innerWidth<900)document.querySelector('.hero').scrollIntoView({behavior:'smooth'})};
+
+/* bulletin météo lu par Claude, si la page y a accès */
+let sample=null;
+if(window.claude&&claude.use)claude.use('sample').then(s=>{sample=s;if(s)$('bulletinD').classList.remove('hide')}).catch(()=>{});
+$('readB').onclick=async()=>{const txt=$('bulletin').value.trim();if(!txt||!sample)return;const msg=$('bMsg');msg.textContent='Lecture du bulletin…';$('readB').disabled=true;
+  try{const v=await sample.json(`Tu lis un bulletin météo marine ou une prévision de vent copiée par un pêcheur. Réponds uniquement par un objet JSON :
+{"vent_noeuds": nombre ou null (vent moyen ; convertis km/h ou Beaufort en nœuds), "direction": "N","NE","E","SE","S","SO","O" ou "NO" ou null (d'où vient le vent), "pression_hpa": nombre ou null, "tendance": "fb","b","s","h" ou "fh" ou null (forte baisse, baisse, stable, hausse, forte hausse), "houle_m": nombre ou null, "temp_eau": nombre ou null}
+Ne devine rien qui ne figure pas dans le texte.
+Bulletin :
+${txt.slice(0,4000)}`,{modelTier:'quick'});
+    const num=(x,a,b)=>typeof x==='number'&&isFinite(x)?clamp(x,a,b):null;let n=0;
+    const w=num(v&&v.vent_noeuds,0,40);if(w!=null){S.wind=Math.round(w);n++}
+    if(v&&DIRS.some(d=>d[0]===v.direction)){S.dir=v.direction;n++}
+    const p=num(v&&v.pression_hpa,980,1045);if(p!=null){S.press=Math.round(p);n++}
+    if(v&&TRENDS.some(t=>t[0]===v.tendance)){S.trend=v.tendance;n++}
+    const h=num(v&&v.houle_m,0,4);if(h!=null){S.houle=Math.round(h*10)/10;n++}
+    const t=num(v&&v.temp_eau,5,27);if(t!=null){S.temp=Math.round(t*2)/2;n++}
+    if(n){S.wxAuto=false;syncInputs();rerender();msg.textContent=`${n} valeur${n>1?'s':''} reprise${n>1?'s':''} du bulletin.`}else msg.textContent="Je n'ai trouvé ni vent, ni houle, ni pression dans ce texte."}
+  catch(e){msg.textContent=e&&e.code==='rate_limited'?'Trop de demandes, réessaie dans un moment.':"Lecture impossible pour l'instant."}
+  $('readB').disabled=false};
+
+function fishRow(score,cls){const n=Math.round(score/10)/2;let h='';for(let i=0;i<5;i++){const f=clamp(n-i,0,1);h+=`<span class="fish"><svg viewBox="0 0 32 20" fill="none" stroke="rgba(150,210,245,.35)" stroke-width="1.2"><use href="#fsh"/></svg><span class="fill" style="width:${f*100}%"><svg viewBox="0 0 32 20" fill="${cls}"><use href="#fsh"/></svg></span></span>`}return h}
+
+let R=null;
+function drawChart(){if(!R)return;const s=$('chart'),W=s.clientWidth,H=s.clientHeight;if(!W)return;const narrow=W<520;
+  const pl=narrow?30:40,pr=12,pt=26,pb=narrow?54:58,ch=H-pt-pb,cw=W-pl-pr;const X=t=>pl+cw*t/24;const hmin=R.hmin,hmax=R.hmax;const Y=h=>pt+ch*(1-(h-hmin)/(hmax-hmin));
+  const curH=34,curY0=H-pb+curH+6;let o='';
+  o+=`<rect x="${X(0)}" y="${pt}" width="${X(clamp(R.A.sr,0,24))-X(0)}" height="${ch}" fill="#030a12" opacity=".75"/><rect x="${X(clamp(R.A.ss,0,24))}" y="${pt}" width="${X(24)-X(clamp(R.A.ss,0,24))}" height="${ch}" fill="#030a12" opacity=".75"/>`;
+  if(R.launch){const a=clamp(R.launch.a,0,24),b=clamp(R.launch.b,0,24);o+=`<rect x="${X(a)}" y="${pt+ch-10}" width="${X(b)-X(a)}" height="10" fill="rgba(63,208,255,.15)" stroke="#3fd0ff" stroke-dasharray="3 3"/>`}
+  R.wins.forEach((w,i)=>{o+=`<rect x="${X(w.a)}" y="${pt}" width="${X(w.b)-X(w.a)}" height="${ch-(R.launch?12:0)}" fill="rgba(46,230,166,${i===0?.26:.12})" stroke="rgba(46,230,166,.5)" stroke-dasharray="${i===0?'0':'3 3'}"/>`});
+  for(let h=0;h<=24;h+=narrow?6:3)o+=`<line x1="${X(h)}" x2="${X(h)}" y1="${pt}" y2="${pt+ch}" stroke="rgba(255,255,255,.06)"/><text x="${X(h)}" y="${pt+ch+16}" fill="#90abbe" font-size="12" text-anchor="middle">${h}h</text>`;
+  if(R.med){o+=`<text x="${pl+cw/2}" y="${pt+ch/2}" fill="#90abbe" font-size="15" text-anchor="middle">Marée négligeable : les coups se jouent sur la lumière</text>`}
+  else{const step=Math.max(1,Math.ceil((hmax-hmin)/(narrow?3:5)));for(let m=Math.ceil(hmin);m<=hmax;m+=step)o+=`<text x="${pl-6}" y="${Y(m)+4}" fill="#90abbe" font-size="12" text-anchor="end">${m}m</text>`;
+    let d='';for(let i=0;i<=192;i++){const t=24*i/192;d+=(i?'L':'M')+X(t).toFixed(1)+','+Y(R.height(t)).toFixed(1)}
+    o+=`<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fd0ff" stop-opacity=".35"/><stop offset="1" stop-color="#3fd0ff" stop-opacity=".02"/></linearGradient></defs><path d="${d}L${X(24)},${pt+ch}L${X(0)},${pt+ch}Z" fill="url(#wg)"/><path d="${d}" fill="none" stroke="#3fd0ff" stroke-width="2.5"/>`;
+    const vm=Math.max(.5,R.P.v*1.2);for(let i=0;i<48;i++){const t=i/2+.25,v=R.cur(t),hh=(curH-6)*v/vm;o+=`<rect x="${X(t)-cw/110}" y="${curY0-hh}" width="${cw/55}" height="${hh}" rx="1.5" fill="rgba(255,255,255,${.1+.3*v/vm})"/>`}
+    o+=`<text x="${pl}" y="${curY0+13}" fill="#90abbe" font-size="11.5">courant, max ≈ ${R.vmaxNow.toFixed(1).replace('.',',')} nds</text>`;
+    for(const [k,t] of [...R.A.hws.map(t=>['PM',t]),...R.A.lws.map(t=>['BM',t])].filter(e=>e[1]>=0&&e[1]<=24)){const y=Y(R.height(t));o+=`<circle cx="${X(t)}" cy="${y}" r="4.5" fill="${k==='PM'?'#3fd0ff':'#06121d'}" stroke="#3fd0ff" stroke-width="2"/><text x="${clamp(X(t),pl+24,W-pr-24)}" y="${y-10}" fill="#e7f2f8" font-size="12.5" font-weight="600" text-anchor="middle">${k} ${fmt(t)}</text>`}}
+  if(S.date===todayStr()){const nowH=(Date.now()/36e5+R.A.off)%24;o+=`<line x1="${X(nowH)}" x2="${X(nowH)}" y1="${pt-6}" y2="${pt+ch}" stroke="#ffd166" stroke-width="1.5"/><text x="${clamp(X(nowH),pl+30,W-30)}" y="${pt-10}" fill="#ffd166" font-size="12" text-anchor="middle">maintenant</text>`}
+  s.innerHTML=o}
+const chartRO=new ResizeObserver(drawChart);chartRO.observe($('chart'));
+const dec=x=>String(x).replace('.',',');
+
+function render(){
+  const wxSrc=applyAuto(S,S.date);
+  R=compute(S,S.date);const {P,sp,T,A,c,L}=R,v=verdictOf(R.score,R.danger);
+  for(const el of document.querySelectorAll('[data-sp]'))el.setAttribute('aria-pressed',el.dataset.sp===S.sp);
+  for(const el of document.querySelectorAll('[data-dir]'))el.setAttribute('aria-pressed',el.dataset.dir===S.dir);
+  for(const el of document.querySelectorAll('[data-tr]'))el.setAttribute('aria-pressed',el.dataset.tr===S.trend);
+  for(const k of['wind','press','houle','turb','temp'])$(k).value=S[k];
+  const PR=PROFILE||{};
+  $('acctBtn').textContent=PR.name?PR.name+' · mon compte':'Mon compte';
+  $('boatInfo').textContent=PR.boat==='boat'?`Ton bateau : ${BTYPES.find(b=>b[0]===PR.boatT)[1].toLowerCase()} de ${dec(PR.boatL)} m. Les limites de vent et de houle en dépendent.`:PR.boat==='kayak'?'Tu pêches en kayak : limites prudentes de 12 nœuds et 1 m de houle.':'Tu pêches du bord : les techniques en bateau sont masquées.';
+  for(const o of $('tech').options){const boat=['leurre','traine','ancre'].includes(o.value),kay=o.value==='kayak';o.disabled=(boat&&PR.boat!=='boat')||(kay&&PR.boat!=='kayak')}
+  const lvS=LIVE[S.place]||{};
+  $('wxSum').innerHTML=[['Vent',`${S.wind} nds de ${S.dir}`],['Rafales',S.gust?S.gust+' nds':'—'],['Pression',`${S.press} hPa ${{fb:'↓↓',b:'↓',s:'→',h:'↑',fh:'↑↑'}[S.trend]}`],['Houle',dec(S.houle.toFixed(1))+' m'],['Eau',dec(S.temp)+' °C'],['Couleur',S.turb<25?'Claire':S.turb<50?'Un peu teintée':S.turb<75?'Teintée':'Chargée']].map(x=>`<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
+  $('windV').textContent=`${S.wind} nds · ${Math.round(S.wind*1.852)} km/h`;
+  $('dirV').textContent={on:'vent de mer',off:'vent de terre',side:'vent latéral'}[R.exp];
+  $('pressV').textContent=S.press+' hPa';$('houleV').textContent=dec(S.houle.toFixed(1))+' m';
+  $('turbV').textContent=S.turb<25?'Claire':S.turb<50?'Un peu teintée':S.turb<75?'Teintée':'Chargée';
+  $('tempV').textContent=dec(S.temp)+' °C';
+  const LV=LIVE[S.place]||{},mois=new Date(Date.UTC(2000,A.month,1)).toLocaleDateString('fr-FR',{month:'long',timeZone:'UTC'});
+  const hhmm=t=>new Date(t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'}).replace(':','h');
+  $('wxBadge').textContent=wxSrc==='live'?'Prévision en direct':wxSrc==='normal'?(LV.status==='loading'?'Chargement…':'Normales du secteur'):'Ta météo';$('wxBadge').classList.toggle('auto',wxSrc==='live');
+  $('wxHelp').textContent=wxSrc==='live'?`Prévision Open-Meteo pour la journée (moyenne de 6 h à 20 h)${S.gust?', rafales jusqu\'à '+S.gust+' nœuds':''}. Mise à jour à ${hhmm(LV.at)}.`
+    :wxSrc==='manual'?'Tes valeurs restent en place si tu changes de cale ou de date.'
+    :LV.status==='loading'?'Récupération de la prévision en cours…'
+    :LV.status==='err'?`Prévision en direct injoignable (pas de réseau, ou page ouverte dans claude.ai qui bloque les connexions externes) : moyennes de ${mois} du secteur à la place.`
+    :`Date au-delà des 10 jours de prévision : moyennes de ${mois} du secteur.`;
+  $('wxReset').classList.toggle('hide',S.wxAuto);$('wxRefresh').classList.toggle('hide',!S.wxAuto||LV.status==='loading');
+  $('tideSrcP').textContent=R.med?'':R.tideSrc==='live'?"Heures et hauteurs issues du modèle marin Open-Meteo (maille de 8 km, hauteurs par rapport au niveau moyen). Le coefficient reste calculé à partir de la lune. Pas fait pour la navigation : vérifie l'annuaire du SHOM.":"Heures et coefficients calculés à partir de la lune et du soleil, à 30–60 min et une dizaine de points de coef près. Vérifie l'annuaire du SHOM avant de partir.";
+  const dl=new Date(Date.UTC(A.y,A.m-1,A.d,12)).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'});
+  $('stamp').textContent=`${P.n} · ${S.cale} · ${dl}`;
+  $('verdict').textContent=v.t;$('verdict').style.color=v.c;
+  $('fishes').innerHTML=fishRow(R.score,R.danger?'#ff5d6c':v.c.replace('var(--au)','#ffd166').replace('var(--em)','#2ee6a6').replace('var(--or)','#ff9f43').replace('var(--rd)','#ff5d6c'));
+  $('fishes').setAttribute('aria-label',`${Math.round(R.score/10)/2} poissons sur 5`);
+  const names={tide:'la marée',win:'le créneau horaire',wind:'la mer',press:'la pression',water:"la couleur de l'eau",season:'la saison'};
+  const ent=Object.entries(R.crit).filter(e=>!(R.med&&e[0]==='tide')).sort((x,y)=>y[1]-x[1]);const best=R.wins[0];
+  let arg=`${sp.full[0].toUpperCase()+sp.full.slice(1)} en ${T.n} depuis ${P.n} : ${names[ent[0][0]]} et ${names[ent[1][0]]} jouent pour toi, ${names[ent[ent.length-1][0]]} beaucoup moins.`;
+  if(best&&!R.danger)arg+=` Le meilleur coup : ${fmt(best.a)} – ${fmt(best.b)}, ${LIGHTN[best.dom]}.`;
+  if(R.techF<.6)arg+=` Le ${T.n} n'est pas la meilleure façon de chercher ${sp.full}.`;
+  $('argument').textContent=arg;
+  $('alerts').innerHTML=R.alerts.map(a=>`<div class="alert">${a}</div>`).join('')+R.notes.map(a=>`<div class="note">${a}</div>`).join('');
+  // fiche marée
+  const ev=[...A.hws.map(t=>['PM',t]),...A.lws.map(t=>['BM',t])].filter(e=>e[1]>=0&&e[1]<24).sort((x,y)=>x[1]-y[1]);
+  const arrow=`<svg width="16" height="16" viewBox="0 0 16 16" style="vertical-align:-2px;transform:rotate(${DIRS.find(d=>d[0]===S.dir)[1]+180}deg)"><path d="M8 1l4 9H9v5H7v-5H4z" fill="#3fd0ff"/></svg>`;
+  $('tidecard').innerHTML=`<div class="hd"><div><div class="num" style="font-size:22px;line-height:1.1">${esc(P.n)}</div><div class="mut small">${esc(S.cale)}</div><div class="mut small" style="text-transform:capitalize">${dl}</div></div>${R.med?'':`<div class="coefbox"><b>${c}</b><span>coef ${A.coefN>A.coef?'↑':'↓'}</span></div>`}</div>
+  ${R.med?'<p class="mut small" style="margin:0">Pas de coefficient en Méditerranée.</p>':`<table class="tt"><tbody>${ev.map(e=>`<tr><td>${e[0]}</td><td class="h">${fmt(e[1])}</td><td class="m">${R.tideSrc==='live'&&R.height(e[1])>=0?'+':''}${dec(R.height(e[1]).toFixed(1))} m</td></tr>`).join('')}</tbody></table>`}
+  <div class="kv"><span>Marée</span><b>${R.med?'Négligeable':coefType(c)+', '+(R.revif?'en revif':'en déchet')}</b><span>Soleil</span><b>${fmt(A.sr)} – ${fmt(A.ss)}</b><span>Lune</span><b>${phaseName(A.age)}</b><span>Vent</span><b>${arrow} ${S.wind} nds de ${S.dir}</b><span>Mer</span><b>Houle ${dec(S.houle.toFixed(1))} m, eau ${dec(S.temp)} °C</b></div>`;
+  $('chartTitle').textContent=R.med?`Les coups à jouer à ${P.n}`:`La marée à ${P.n} et les coups à jouer`;
+  drawChart();
+  // critères
+  const peaks=A.hws.map(h=>h-TP/4).concat(A.hws.map(h=>h+TP/4)).filter(t=>t>=0&&t<24).sort((x,y)=>x-y);
+  const tideTxt=R.med?"Pas de vraie marée ici : le courant dépend surtout du vent et des reliefs. On ne pénalise pas, on n'avantage pas.":`Coef ${c}, ${coefType(c).toLowerCase()}, ${R.revif?'en revif':'en déchet'}. ${sp.full[0].toUpperCase()+sp.full.slice(1)} se plaît autour de ${sp.mu}. Marnage de ${dec(R.range.toFixed(1))} m, courant jusqu'à ${dec(R.vmaxNow.toFixed(1))} nœuds à mi-marée${peaks.length?' (premier pic vers '+fmt(peaks[0])+')':''}. ${sp.note}`;
+  const winTxt=R.wins.length?`${R.wins.length} coup${R.wins.length>1?'s':''} dans la journée, le meilleur ${LIGHTN[best.dom]}. ${best.dom==='aube'||best.dom==='crep'?'Marée et lumière rasante tombent ensemble : le scénario idéal.':best.dom==='nuit'?(T.kayak?'Mais il tombe de nuit : pas de kayak de nuit sans feux, VHF et expérience.':'Coup de nuit, à jouer si tu connais le poste par cœur.'):'Pleine lumière : pêche plus profond ou plus fin.'}`:'Aucun coup favorable entre 0 h et 24 h.';
+  const windTxt=`${S.wind} nœuds de ${S.dir} (${{on:'vent de mer',off:'vent de terre',side:'vent latéral'}[R.exp]}), houle ${dec(S.houle.toFixed(1))} m. ${T.boat?'Avec '+R.boatName:'En '+T.n}, on fixe la limite raisonnable à ${L.wind} nœuds et ${dec(L.houle)} m.${R.ressac?' Ressac parfait : la vague brasse et désoriente le petit poisson.':''}${R.flat?' Mer d\'huile : eau très claire, le bar se méfie en dehors de l\'aube.':''}${T.boat&&S.wind>12&&!R.danger?' Ça va dériver vite : ancre flottante ou contre-moteur.':''}`;
+  const pressTxt=`${S.press} hPa ${TRL[S.trend]}. ${S.trend==='b'||S.trend==='fb'?"Une dépression qui arrive, c'est souvent le coup de frénésie des carnassiers juste avant la dégradation.":S.trend==='s'?(S.press>1028?"Anticyclone bien installé : poisson repu et méfiant, mise sur les heures d'aube.":'Pression stable : comportement régulier, bon pour les poissons de fond et les dorades.'):'Pression qui remonte derrière un front : souvent 24 à 48 h de calme plat côté touches.'}`;
+  const waterTxt=`Eau ${R.effT<25?'claire':R.effT<50?'un peu teintée':R.effT<75?'teintée':'chargée'} une fois la houle${R.med?'':' et le brassage du coef'} pris en compte. ${sp.full[0].toUpperCase()+sp.full.slice(1)} préfère une eau ${sp.turb<25?'claire':sp.turb<50?'légèrement teintée':'teintée'}.${R.effT>85?' Là, c\'est du café au lait : visibilité quasi nulle.':''}`;
+  const sv=sp.season[A.month];
+  const seasTxt=`Eau à ${dec(S.temp)} °C (${sp.full} est à l'aise entre ${sp.temp[0]} et ${sp.temp[1]} °C). En ${new Date(Date.UTC(2000,A.month,1)).toLocaleDateString('fr-FR',{month:'long',timeZone:'UTC'})}, c'est ${sv>=.8?'la pleine saison':sv>=.5?'une bonne période':sv>=.25?'une période moyenne':'hors saison'}${R.med&&(sp.id==='lieu'||sp.id==='cab')?', et cette espèce est rare en Méditerranée':''}.`;
+  const rows=[['Marée & courant','tide',tideTxt],['Créneau & lumière','win',winTxt],['Vent, mer & sécurité','wind',windTxt],['Pression','press',pressTxt],["Couleur de l'eau",'water',waterTxt],['Saison & température','season',seasTxt]];
+  $('crit').innerHTML=rows.map(r=>{const x=R.crit[r[1]],n=Math.round(x*5),col=colOf(x);return `<div class="row"><div class="nm">${r[0]}</div><div class="pips" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i style="${i<n?'background:'+col:''}"></i>`).join('')}</div><div class="wd" style="color:${col}">${word(x)}</div><div class="tx">${r[2]}</div></div>`}).join('')+(R.techF<.8?`<p class="mut small" style="margin:0">Le ${T.n} n'est pas idéal pour ${sp.full} : le verdict en tient compte.</p>`:'');
+  // coups
+  $('wins').innerHTML=R.wins.length?R.wins.map((w,i)=>`<div class="win"><div class="h" style="color:${i===0?'var(--em)':'var(--ink)'}">${fmt(w.a)} – ${fmt(w.b)}</div><div>${w.l}<div class="mut small">${LIGHTN[w.dom]}${w.ref?' · calé sur la '+(w.ref==='PM'?'pleine mer':'basse mer'):''}</div></div><div class="q" style="color:${colOf(w.q)}">${i===0?'Le meilleur':word(w.q)}</div></div>`).join(''):'<p class="mut">Aucun coup exploitable ce jour-là.</p>';
+  // planner
+  $('planHelp').textContent=S.wxAuto?(LV.status==='ok'?'Les 10 prochains jours avec la prévision en direct (houle et marée du modèle sur 8 jours). Touche un jour pour le détail.':'Les 10 prochains jours avec les normales du secteur : marée, lune, soleil et saison font la différence. Touche un jour pour le détail.'):'Les 10 prochains jours avec ta météo actuelle : seuls la marée, la lune, le soleil et la saison changent. Touche un jour pour le détail.';
+  const t0=todayStr();let dh='';for(let i=0;i<10;i++){const ds=addDays(t0,i);const St=Object.assign({},S);applyAuto(St,ds);const r=compute(St,ds),vv=verdictOf(r.score,r.danger),[y,m,d]=ds.split('-').map(Number);const lab=new Date(Date.UTC(y,m-1,d,12)).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',timeZone:'UTC'});
+    const fc={'var(--au)':'#ffd166','var(--em)':'#2ee6a6','var(--or)':'#ff9f43','var(--rd)':'#ff5d6c'}[vv.c];
+    dh+=`<button class="day" data-day="${ds}" aria-current="${ds===S.date}" style="--c:${vv.c}" aria-label="${lab} : ${vv.t}"><div class="d">${lab}</div><div class="fishes sm">${fishRow(r.score,fc)}</div><div class="k">${r.med?'—':'coef '+r.c}</div></button>`}
+  $('days').innerHTML=dh;
+  // conseils
+  const tp=TIPS[sp.id][T.shore?'shore':'boat'];
+  $('tipsTitle').textContent=`Ce qu'on met au bout · ${sp.n}, ${T.n}`;
+  $('tips').innerHTML=[['Leurres',tp[0]],['Appâts',tp[1]],['Grammages & montage',tp[2]],['Postes',tp[3]],['Coins à voir autour de '+P.n,P.spots]].map(x=>`<div class="tip"><h3>${esc(x[0])}</h3><p>${esc(x[1])}</p></div>`).join('');
+  const cx=[];
+  if(R.effT>60)cx.push('Eau chargée : leurres qui vibrent fort (paddle tail, palette), couleurs vives ou chartreuse, appâts bien odorants.');
+  if(R.effT<25)cx.push('Eau claire : couleurs naturelles (lançon, sardine), fluoro 26–30/100, approche discrète.');
+  if(!R.med&&c>=90)cx.push('Gros courant : prends 10 à 20 g de plus et cherche les contre-courants derrière les roches.');
+  if(!R.med&&c<45)cx.push('Mortes-eaux : peu de courant, montages légers et animations lentes. Les dorades adorent.');
+  if(S.wind>15&&!R.danger)cx.push('Vent soutenu : leurres denses pour garder le contact, tresse fine pour limiter le ventre.');
+  if(best&&best.dom==='nuit')cx.push('Coup de nuit : silhouettes sombres, leurres de surface lents, frontale en lumière rouge.');
+  if(best&&(best.dom==='aube'||best.dom==='crep'))cx.push(`Sois en poste une demi-heure avant ${fmt(best.a)} : le premier passage est souvent le bon.`);
+  if(S.trend==='b'||S.trend==='fb')cx.push('Pression qui chute : pêche à fond avant le front, et rentre avant que ça se dégrade.');
+  if(S.trend==='fh')cx.push('Pression qui remonte fort : ralentis l\'animation et descends plus profond.');
+  if(sp.season[A.month]<.25)cx.push(`Hors saison pour ${sp.full} : une autre cible paiera mieux ce mois-ci.`);
+  $('ctx').innerHTML=cx.map(x=>`<li>${x}</li>`).join('');
+  renderMemo()}
+
+/* ---------- compte ---------- */
+let PROFILE=null;
+try{PROFILE=JSON.parse(localStorage.getItem('jourj_profile')||'null')}catch(e){}
+const OB={boat:'boat',boatL:5.5,boatT:'open',place:DEF.place,cale:DEF.cale,sp:'bar'};
+$('obT2').innerHTML=BTYPES.map(b=>`<button data-obt="${b[0]}">${b[1]}</button>`).join('');
+$('obSp').innerHTML=SP.map(x=>`<button class="chip" data-osp="${x.id}">${x.n}</button>`).join('');
+function obFill(){const p=PLACES.find(x=>keyOf(x)===OB.place)||PLACES[0];
+  $('obRegion').innerHTML=regions.map(r=>`<option${r===p.r?' selected':''}>${esc(r)}</option>`).join('');
+  $('obDept').innerHTML=[...new Set(PLACES.filter(x=>x.r===p.r).map(x=>x.d))].map(d=>`<option${d===p.d?' selected':''}>${esc(d)}</option>`).join('');
+  $('obCommune').innerHTML=PLACES.filter(x=>x.d===p.d).map(x=>`<option value="${esc(keyOf(x))}"${keyOf(x)===OB.place?' selected':''}>${esc(x.n)}</option>`).join('');
+  const cl=calesOf(p);if(!cl.includes(OB.cale))OB.cale=cl[0];$('obCale').innerHTML=cl.map(c=>`<option${c===OB.cale?' selected':''}>${esc(c)}</option>`).join('');
+  for(const b of document.querySelectorAll('[data-ob]'))b.setAttribute('aria-pressed',b.dataset.ob===OB.boat);
+  for(const b of document.querySelectorAll('[data-obt]'))b.setAttribute('aria-pressed',b.dataset.obt===OB.boatT);
+  for(const b of document.querySelectorAll('[data-osp]'))b.setAttribute('aria-pressed',b.dataset.osp===OB.sp);
+  $('obBoatF').classList.toggle('hide',OB.boat!=='boat');$('obL').value=OB.boatL;$('obLV').textContent=dec(OB.boatL)+' m'}
+function openOb(){if(PROFILE)Object.assign(OB,PROFILE);$('obName').value=OB.name||'';$('obT').textContent=PROFILE?'Mon compte':'Crée ton compte pêcheur';$('obSub').classList.toggle('hide',!!PROFILE);$('obErr').textContent='';obFill();$('ob').classList.remove('hide');document.body.style.overflow='hidden';setTimeout(()=>$('obName').focus(),50)}
+$('obRegion').onchange=e=>{OB.place=keyOf(PLACES.find(p=>p.r===e.target.value));OB.cale='';obFill()};
+$('obDept').onchange=e=>{OB.place=keyOf(PLACES.find(p=>p.d===e.target.value));OB.cale='';obFill()};
+$('obCommune').onchange=e=>{OB.place=e.target.value;OB.cale='';obFill()};
+$('obCale').onchange=e=>{OB.cale=e.target.value};
+$('obL').oninput=e=>{OB.boatL=+e.target.value;$('obLV').textContent=dec(OB.boatL)+' m'};
+$('obBoat').onclick=e=>{const b=e.target.closest('[data-ob]');if(b){OB.boat=b.dataset.ob;obFill()}};
+$('obT2').onclick=e=>{const b=e.target.closest('[data-obt]');if(b){OB.boatT=b.dataset.obt;obFill()}};
+$('obSp').onclick=e=>{const b=e.target.closest('[data-osp]');if(b){OB.sp=b.dataset.osp;obFill()}};
+$('obSave').onclick=()=>{const name=$('obName').value.trim();if(!name){$('obErr').textContent='Indique ton prénom ou un pseudo.';$('obName').focus();return}
+  const first=!PROFILE;PROFILE={name,boat:OB.boat,boatL:OB.boatL,boatT:OB.boatT,place:OB.place,cale:OB.cale,sp:OB.sp};try{localStorage.setItem('jourj_profile',JSON.stringify(PROFILE))}catch(e){}
+  applyProfile(first);$('ob').classList.add('hide');document.body.style.overflow='';rerender();loadLive(place())};
+function applyProfile(resetPlace){if(!PROFILE)return;S.boatL=PROFILE.boatL;S.boatT=PROFILE.boatT;if(resetPlace){S.place=PROFILE.place;S.cale=PROFILE.cale;S.sp=PROFILE.sp;S.wxAuto=true}
+  const ok=t=>{const boat=['leurre','traine','ancre'].includes(t);return !((boat&&PROFILE.boat!=='boat')||(t==='kayak'&&PROFILE.boat!=='kayak'))};
+  if(!ok(S.tech))S.tech=PROFILE.boat==='boat'?'leurre':PROFILE.boat==='kayak'?'kayak':'surf';if(resetPlace&&PROFILE.boat==='boat')S.tech='leurre';if(resetPlace&&PROFILE.boat==='kayak')S.tech='kayak';syncInputs()}
+
+/* ---------- memento ---------- */
+const MTABS=[['mailles','Tailles & quotas'],['secu','Sécurité'],['bonnes','Bonnes pratiques'],['methode','Comment on calcule']];
+let mtab='mailles';
+$('mtabs').innerHTML=MTABS.map(t=>`<button class="chip" data-mt="${t[0]}">${t[1]}</button>`).join('');
+$('mtabs').onclick=e=>{const b=e.target.closest('[data-mt]');if(b){mtab=b.dataset.mt;renderMemo()}};
+function renderMemo(){
+  for(const el of document.querySelectorAll('[data-mt]'))el.setAttribute('aria-pressed',el.dataset.mt===mtab);
+  const p=place(),med=SECT[p.sec].med,north=p.lat>=48,mon=+S.date.slice(5,7);
+  const barQ=med?'Règles Méditerranée : à vérifier':north?((mon===2||mon===3)?'Février–mars : pêcher-relâcher seulement':'3 par pêcheur et par jour (no-kill en février et mars)'):'2 par pêcheur et par jour';
+  let h='';
+  if(mtab==='mailles')h=`<p class="mut small">${esc(p.n)} est ${med?'en Méditerranée':north?'au nord du 48<sup>e</sup> parallèle (ligne d\'Audierne)':'au sud du 48<sup>e</sup> parallèle'}. Tailles Manche-Atlantique (arrêté du 26 octobre 2012 modifié), mesurées du bout du museau au bout de la queue.${med?' En Méditerranée, plusieurs tailles diffèrent : vérifie avant de garder un poisson.':''}</p>
+  <div class="scroll"><table class="mt stack"><thead><tr><th>Espèce</th><th>Taille mini</th><th>Limite par jour</th><th>À savoir</th></tr></thead><tbody>
+  <tr><td>Bar</td><td class="n">42 cm</td><td>${barQ}</td><td>Marquage, déclaration RecFishing</td></tr>
+  <tr><td>Lieu jaune</td><td class="n">30 cm*</td><td>2 par pêcheur (à vérifier)</td><td>Marquage, déclaration RecFishing</td></tr>
+  <tr><td>Maquereau</td><td class="n">20 cm</td><td>10 par pêcheur</td><td>Déclaration RecFishing</td></tr>
+  <tr><td>Dorade royale</td><td class="n">23 cm</td><td></td><td></td></tr>
+  <tr><td>Dorade grise</td><td class="n">23 cm</td><td></td><td></td></tr>
+  <tr><td>Cabillaud</td><td class="n">42 cm</td><td></td><td>Marquage</td></tr>
+  <tr><td>Sole</td><td class="n">25 cm</td><td></td><td></td></tr>
+  <tr><td>Plie</td><td class="n">27 cm</td><td></td><td></td></tr>
+  <tr><td>Turbot</td><td class="n">30 cm</td><td></td><td>Marquage</td></tr>
+  </tbody></table></div>
+  <p class="mut small" style="margin-top:10px">* Les sources officielles divergent pour le lieu jaune : 30 cm, ou 42 cm selon une modification récente, et 2 ou 3 poissons par jour. Depuis le 12 février 2026, à partir de 16 ans, il faut s'enregistrer sur l'appli RecFishing pour pêcher le bar, le lieu jaune, le maquereau ou la dorade rose, et y déclarer ses prises le jour même, relâchées comprises. Les règles changent chaque année : vérifie sur <a href="https://www.service-public.gouv.fr/particuliers/vosdroits/F2087" target="_blank" rel="noopener">service-public.gouv.fr</a>.</p>`;
+  if(mtab==='secu')h=`<ul><li>Urgence en mer : VHF canal 16, ou le 196 depuis un téléphone (CROSS, gratuit).</li><li>Armement : basique jusqu'à 2 milles d'un abri, côtier jusqu'à 6 milles. Au-delà, il faut l'armement semi-hauturier.</li><li>Gilet porté, pas rangé dans le coffre. En kayak, c'est non négociable.</li><li>Préviens un proche : zone, heure de retour, et appelle-le en rentrant.</li><li>Raz Blanchard, raz de Barfleur, Fromveur, raz de Sein, goulet du Golfe : jusqu'à 10 nœuds de courant. Seulement à l'étale et par beau temps.</li><li>Grandes marées sur l'estran (baie du Mont, Chausey) : la mer remonte à la vitesse d'un homme qui marche. Repars au plus tard à l'étale de basse mer.</li><li>Cales de fort marnage : algues glissantes et vase en bas de cale. Vérifie qu'elle est praticable avant d'y engager la remorque.</li><li>Vent contre courant : la mer peut doubler de creux en quelques minutes à mi-marée.</li></ul>`;
+  if(mtab==='bonnes')h=`<ul><li>Marquage : coupe la partie basse de la nageoire de queue des espèces concernées dès la mise en bourriche.</li><li>Vente des prises de loisir strictement interdite.</li><li>Relâcher : mains mouillées, ardillons écrasés, remise à l'eau rapide, tête face au courant.</li><li>Appâts : ne prends que ce qu'il te faut et respecte les tailles (couteau 10 cm).</li><li>Parcs ostréicoles : on ne marche pas sur les tables et on ne pêche pas au milieu des parcs en exploitation.</li><li>Ramène tresse, plombs perdus et emballages : la tresse tue les oiseaux.</li></ul>`;
+  if(mtab==='methode')h=`<p>Six critères comptent : marée, créneau horaire et lumière, vent et mer, pression, saison et température, couleur de l'eau. On tient compte de l'adéquation entre ta technique et l'espèce, on pénalise fort le hors-saison, et on bloque le verdict sur « Reste au port » si le vent ou la houle dépassent la limite de ta technique ou de ton bateau.</p><p>La limite du bateau grandit avec sa longueur : un semi-rigide encaisse un peu mieux le clapot qu'une coque open, une cabine encore un peu mieux. Ce sont des repères prudents, pas des règles : c'est toi le patron à bord.</p><p>Les marées sont calculées à partir de l'âge de la lune, de sa distance et des équinoxes, puis décalées selon le secteur. Coordonnées et cales sont données à l'échelle de la commune, liste non exhaustive : ajoute ta cale si elle manque.</p><p class="mut">Le verdict : Reste au port, Petite pêche, Ça se tente, Ça devrait mordre, Grosse journée en vue.</p>`;
+  $('mbody').innerHTML=h}
+
+if(PROFILE)applyProfile(false);
+if(S.wxAuto)applyNormals();
+syncInputs();render();loadLive(place());
+if(!PROFILE)openOb();
+}
+</script>
+</body>
+</html>
